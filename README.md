@@ -1,4 +1,4 @@
-pyToddlerMusicBox
+toddlerMusicBox
 =================
 
-pyToddlerMusicBox for some python scripts to build a music box for my toddler
+toddlerMusicBox for some python scripts to build a music box for my toddler
