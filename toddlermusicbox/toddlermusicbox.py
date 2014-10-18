@@ -19,11 +19,12 @@
 
 
 import locale
-import mpd
+
 import os
 import re
 import select, sys
 import time, threading
+from mpc import MPC
 
 # ------------------------------
 # global configuration
@@ -64,86 +65,28 @@ class ToddlerMusicBox():
 
 	def __init__(self):
 		self.loop = False
-		self.syncMPD = False
-		self.idle = False
+		
 
 	def _init_mpd(self, host, port):
 		self.mpc = mpd.MPDClient()
 		self.mpc.connect(host, port)
 
 	def __enter__(self):
-		self._init_mpd(conf['MPD_HOST'], conf['MPD_PORT'])
-		self.updateMpcStatus()
+		self.mpc = MPC(conf)
 
 		return self
 
 	def __exit__(self, type, value, traceback):
 		self.loop = False
 
-	def enter_idle(self):
-		'''Enter idle state. Must be called outside idle state.
 
-		No return value.'''
-		self.mpc.send_idle()
-		self.idle = True
-
-	def leave_idle(self):
-		'''Leave idle state. Must be called inside idle state.
-		Return Value: Events received in idle state.'''
-		self.mpc.send_noidle()
-		self.idle = False
-		try:
-			return self.mpc.fetch_idle()
-		except mpd.PendingCommandError:
-			# return None if nothing received
-			return None
-
-	def try_enter_idle(self):
-		if not self.idle:
-			self.enter_idle()
-	
-	def try_leave_idle(self):
-		if self.idle:
-			return self.leave_idle()
-
-	def updateMpcStatus(self):
-		self.status = self.mpc.status()
-		self.stats = self.mpc.stats()
-		self.currentsong = self.mpc.currentsong()
-
-	def update(self):
-		self.updateMpcStatus()
-
-	def process(self, fd):
-		'''Process init/timeout/mpd/stdin events. Called in main loop.'''
-
-		if fd == 'init' or fd == 'mpd':
-			self.syncMPD = True
-
-		if self.syncMPD:
-			events = self.try_leave_idle()
-
-			self.update()
-
-			if events and 'player' in events:
-				print('Status: ', self.status['state'])
-				print('Current: ', self.currentsong)
-
-		self.try_enter_idle()
 
 	def main_loop(self):
 
-		poll = select.poll()
-		poll.register(self.mpc.fileno(), select.POLLIN)
-		poll.register(0, select.POLLIN)
-
 		self.loop = True
+		
+		self.mpc.start()
+		
 		while self.loop:
-			responses = poll.poll(200)
-			if not responses:
-				self.process(fd='timeout')
-			else:
-				for fd, event in responses:
-					if fd == self.mpc.fileno() and event & select.POLLIN:
-						self.process(fd='mpd')
+			time.sleep(0.1)
 				
