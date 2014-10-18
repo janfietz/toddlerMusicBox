@@ -1,7 +1,6 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# pyToddlerMusicBox
+# toddlermusicbox
 #
 # Copyright (C) 2014 Jan Fietz
 #
@@ -18,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-'''ToddlerMusicBox'''
+
 import locale
 import mpd
 import os
@@ -148,10 +147,3 @@ class ToddlerMusicBox():
 					if fd == self.mpc.fileno() and event & select.POLLIN:
 						self.process(fd='mpd')
 				
-		
-
-if __name__ == '__main__':
-	locale.setlocale(locale.LC_ALL,'')
-	read_conf()
-	with ToddlerMusicBox() as tmb:
-		tmb.main_loop()
