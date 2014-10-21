@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # ToddlerMusicBox
@@ -19,11 +19,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 '''ToddlerMusicBox'''
-from toddlermusicbox import toddlermusicbox 
+from toddlermusicbox import tmb_main 
 import locale
 
 if __name__ == '__main__':
 	locale.setlocale(locale.LC_ALL,'')
-	toddlermusicbox.read_conf()
-	with toddlermusicbox.ToddlerMusicBox() as tmb:
+	tmb_main.read_conf()
+	with tmb_main.ToddlerMusicBox() as tmb:
 		tmb.main_loop()

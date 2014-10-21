@@ -9,7 +9,7 @@ import os
 import re
 import select, sys
 import time, threading
-import tmb_module
+import tmb_module, tmb_main
 
 
         
@@ -44,6 +44,8 @@ class MPCThread(threading.Thread):
         try:
             self._mpc.connect(self._host, self._port)
             self._doConnect = False
+            self._updateStatus()
+            tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
             print('MPC: connected')
         except mpd.ConnectionError as e:
             print("ConnectionError:", e)
@@ -93,9 +95,10 @@ class MPCThread(threading.Thread):
 
             self._updateStatus()
 
-            if events and 'player' in events:
-                print('Status: ', self.status['state'])
-                print('Current: ', self.currentsong)
+            for event in events:
+                tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
+                #print('Status: ', self.status['state'])
+                #print('Current: ', self.currentsong)
 
         self._try_enter_idle()
         
@@ -111,7 +114,6 @@ class MPCThread(threading.Thread):
                 try:
                     poll = select.poll()
                     poll.register(self._mpc.fileno(), select.POLLIN)
-                    poll.register(0, select.POLLIN)
                     while self._loop:
                         responses = poll.poll(200)
                         if not responses:

@@ -25,6 +25,7 @@ import re
 import select, sys
 import time, threading
 from mpc import MPCModule
+import collections
 
 # ------------------------------
 # global configuration
@@ -63,6 +64,8 @@ def read_conf():
 class ToddlerMusicBox():
 	'''Main class'''
 
+	eventQueue = collections.deque()
+	
 	def __init__(self):
 		self.loop = False
 		
@@ -79,7 +82,17 @@ class ToddlerMusicBox():
 	def __exit__(self, type, value, traceback):
 		self.loop = False
 
-
+	def _on_player(self, args):
+		print("Status: ", args['status']['state'])
+		if len(args['current']):
+			print("Current Song: ", args['current']['artist'] , "-", args['current']['title'])
+		
+	def _processEvent(self, event):
+		try:
+			getattr(self, "_on_%s" % event['type'])(event['args'])
+		except AttributeError as e:
+			print(e)
+		
 
 	def main_loop(self):
 
@@ -88,5 +101,11 @@ class ToddlerMusicBox():
 		self.mpc.start()
 		
 		while self.loop:
+			try:
+				processQueue = True
+				while processQueue:
+					self._processEvent(ToddlerMusicBox.eventQueue.popleft())
+			except IndexError:
+				pass
 			time.sleep(0.1)
 				

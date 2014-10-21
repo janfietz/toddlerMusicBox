@@ -1,1 +1,1 @@
-__all__ = ['toddlermusicbox']
+__all__ = ['tmb_main']
