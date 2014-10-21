@@ -9,111 +9,145 @@ import os
 import re
 import select, sys
 import time, threading
+import tmb_module
 
-    
-class MPC(threading.Thread):
+
+        
+class MPCThread(threading.Thread):
     '''
     classdocs
     '''
 
-    def __init__(self, params):
+    def __init__(self, mpc, host, port):
         '''
         Constructor
         '''
         threading.Thread.__init__(self)
         
-        self.host = params['MPD_HOST']
-        self.port = params['MPD_PORT']
-        self.loop = True
-        self.mpc = mpd.MPDClient()
-        self.doConnect = True
+        self._host = host
+        self._port = port
+        self._mpc = mpc
         
-        self.syncMPD = False
-        self.idle = False
+        self._doConnect = True
+        self._loop = True
+        self._syncMPD = False
+        self._idle = False
+    @property
+    def loop(self):
+        return self._loop
+    
+    @loop.setter
+    def loop(self, value):
+        self._loop = value
         
-    def connect(self):
+    def _connect(self):
         try:
-            self.mpc.connect(self.host, self.port)
-            self.doConnect = False
+            self._mpc.connect(self._host, self._port)
+            self._doConnect = False
             print('MPC: connected')
         except mpd.ConnectionError as e:
             print("ConnectionError:", e)
         except:
             print("Unexpected error:", sys.exc_info()[0])
-            self.doConnect = True
+            self._doConnect = True
         
-    def enter_idle(self):
+    def _enter_idle(self):
         '''Enter idle state. Must be called outside idle state.
 
         No return value.'''
-        self.mpc.send_idle()
-        self.idle = True
+        self._mpc.send_idle()
+        self._idle = True
 
-    def leave_idle(self):
+    def _leave_idle(self):
         '''Leave idle state. Must be called inside idle state.
         Return Value: Events received in idle state.'''
-        self.mpc.send_noidle()
-        self.idle = False
+        self._mpc.send_noidle()
+        self._idle = False
         try:
-            return self.mpc.fetch_idle()
+            return self._mpc.fetch_idle()
         except mpd.PendingCommandError:
             # return None if nothing received
             return None
 
-    def try_enter_idle(self):
-        if not self.idle:
-            self.enter_idle()
+    def _try_enter_idle(self):
+        if not self._idle:
+            self._enter_idle()
     
-    def try_leave_idle(self):
-        if self.idle:
-            return self.leave_idle()
+    def _try_leave_idle(self):
+        if self._idle:
+            return self._leave_idle()
 
-    def updateStatus(self):
-        self.status = self.mpc.status()
-        self.stats = self.mpc.stats()
-        self.currentsong = self.mpc.currentsong()
+    def _updateStatus(self):
+        self.status = self._mpc.status()
+        self.stats = self._mpc.stats()
+        self.currentsong = self._mpc.currentsong()
     
-    def process(self, fd):
+    def _process(self, fd):
         '''Process init/timeout/mpd/stdin events. Called in main loop.'''
 
         if fd == 'init' or fd == 'mpd':
-            self.syncMPD = True
+            self._syncMPD = True
 
-        if self.syncMPD:
-            events = self.try_leave_idle()
+        if self._syncMPD:
+            events = self._try_leave_idle()
 
-            self.updateStatus()
+            self._updateStatus()
 
             if events and 'player' in events:
                 print('Status: ', self.status['state'])
                 print('Current: ', self.currentsong)
 
-        self.try_enter_idle()
+        self._try_enter_idle()
         
     def run(self):
         
         self.loop = True
         while self.loop:
             
-            if self.doConnect:
-                self.connect()
+            if self._doConnect:
+                self._connect()
                 time.sleep(1)
             else:
                 try:
                     poll = select.poll()
-                    poll.register(self.mpc.fileno(), select.POLLIN)
+                    poll.register(self._mpc.fileno(), select.POLLIN)
                     poll.register(0, select.POLLIN)
-                    while self.loop:
+                    while self._loop:
                         responses = poll.poll(200)
                         if not responses:
-                            self.process(fd='timeout')
+                            self._process(fd='timeout')
                         else:
                             for fd, event in responses:
-                                if fd == self.mpc.fileno() and event & select.POLLIN:
-                                    self.process(fd='mpd')
+                                if fd == self._mpc.fileno() and event & select.POLLIN:
+                                    self._process(fd='mpd')
                 except mpd.ConnectionError:
                     print('MPC: Connection lost')
-                    self.mpc.disconnect()
-                    self.doConnect = True 
+                    self._mpc.disconnect()
+                    self._doConnect = True 
            
+class MPCModule(tmb_module.TMB_Module):
+    
+    def __init__(self, params):
+        '''
+        Constructor
+        '''
+        tmb_module.TMB_Module.__init__(self, params)
         
+        self.host = params['MPD_HOST']
+        self.port = params['MPD_PORT']
+        
+                
+    def start(self):
+        tmb_module.TMB_Module.start(self)
+        
+        self.mpc = mpd.MPDClient()
+        self.thread = MPCThread(self.mpc, self.host, self.port)
+        
+        self.thread.start()
+        
+    def stop(self):
+        self.thread.loop = False
+        self.thread.join()
+        tmb_module.TMB_Module.stop(self)
+        
+         

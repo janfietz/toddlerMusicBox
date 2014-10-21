@@ -24,7 +24,7 @@ import os
 import re
 import select, sys
 import time, threading
-from mpc import MPC
+from mpc import MPCModule
 
 # ------------------------------
 # global configuration
@@ -72,7 +72,7 @@ class ToddlerMusicBox():
 		self.mpc.connect(host, port)
 
 	def __enter__(self):
-		self.mpc = MPC(conf)
+		self.mpc = MPCModule(conf)
 
 		return self
 
