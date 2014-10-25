@@ -24,7 +24,7 @@ import os
 import re
 import select, sys
 import time, threading
-from mpc import MPCModule
+from tmb_module_mpc import MPCModule
 import collections
 
 # ------------------------------
@@ -37,8 +37,8 @@ conf = {}
 def read_conf():
 	'''Read global configurations from file.'''
 	
-	conf['MPD_HOST'] = 'localhost'
-	conf['MPD_PORT'] = 6600
+	conf['MPC_MPD_HOST'] = 'localhost'
+	conf['MPC_MPD_PORT'] = 6600
 	
 	for cf in conf_files:
 		if not os.path.isfile(cf):
@@ -53,9 +53,9 @@ def read_conf():
 				if not m:
 					continue
 				g = m.groups()
-				if g[0] == 'MPD_HOST':
+				if g[0] == 'MPC_MPD_HOST':
 					conf[g[0]] = g[1]
-				elif g[0] == 'MPD_PORT':
+				elif g[0] == 'MPC_MPD_PORT':
 					conf[g[0]] = int(g[1])
 				else:
 					raise Exception('Unknows option {} in conf file {}, line {}'.format(g[0], cf, l_cnt))
@@ -68,14 +68,13 @@ class ToddlerMusicBox():
 	
 	def __init__(self):
 		self.loop = False
+		self.modules = []
 		
 
-	def _init_mpd(self, host, port):
-		self.mpc = mpd.MPDClient()
-		self.mpc.connect(host, port)
-
 	def __enter__(self):
-		self.mpc = MPCModule(conf)
+
+		'''Create Modules'''
+		self.modules.append(MPCModule(conf))
 
 		return self
 
@@ -97,15 +96,23 @@ class ToddlerMusicBox():
 	def main_loop(self):
 
 		self.loop = True
-		
-		self.mpc.start()
+
+		for module in self.modules:
+			module.start()
 		
 		while self.loop:
 			try:
 				processQueue = True
 				while processQueue:
 					self._processEvent(ToddlerMusicBox.eventQueue.popleft())
+
+				for module in modules:
+					module.update()
+
 			except IndexError:
 				pass
 			time.sleep(0.1)
+
+		for module in modules:
+			module.stop()
 				

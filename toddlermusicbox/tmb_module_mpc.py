@@ -135,8 +135,8 @@ class MPCModule(tmb_module.TMB_Module):
         '''
         tmb_module.TMB_Module.__init__(self, params)
         
-        self.host = params['MPD_HOST']
-        self.port = params['MPD_PORT']
+        self.host = params['MPC_MPD_HOST']
+        self.port = params['MPC_MPD_PORT']
         
                 
     def start(self):
