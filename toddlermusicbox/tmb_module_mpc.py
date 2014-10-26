@@ -11,6 +11,7 @@ import select, sys
 import time, threading
 import tmb_module, tmb_main
 import logging
+import collections
 
         
 class MPCThread(threading.Thread):
@@ -32,6 +33,9 @@ class MPCThread(threading.Thread):
         self._loop = True
         self._syncMPD = False
         self._idle = False
+
+        self.tasks = collections.deque()
+
     @property
     def loop(self):
         return self._loop
@@ -39,7 +43,10 @@ class MPCThread(threading.Thread):
     @loop.setter
     def loop(self, value):
         self._loop = value
-        
+
+    def addTask(self, task):
+        self.tasks.append(task)
+       
     def _connect(self):
         try:
             self._mpc.connect(self._host, self._port)
@@ -85,21 +92,35 @@ class MPCThread(threading.Thread):
         self.currentsong = self._mpc.currentsong()
     
     def _process(self, fd):
-        '''Process init/timeout/mpd/stdin events. Called in main loop.'''
+        '''Process init/timeout/mpd events. Called in main loop.'''
 
-        if fd == 'init' or fd == 'mpd':
-            self._syncMPD = True
-
+        self._syncMPD = True
+        notify = False
         if self._syncMPD:
             events = self._try_leave_idle()
+            if events:
+                notify = True
+
+            if self.tasks:
+                notify = True
+                self._mpc.command_list_ok_begin()
+                try:
+                    processQueue = True
+                    while processQueue:
+                        exec('self._mpc.' + task.popleft())
+                except IndexError:
+                    pass
+                self._mpc.command_list_end()
 
             self._updateStatus()
 
-            for event in events:
-                tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
-
+        
+        self._syncMPD = False
         self._try_enter_idle()
         
+        if notify:
+            tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
+
     def run(self):
         
         self.loop = True
@@ -149,5 +170,24 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.loop = False
         self.thread.join()
         tmb_module.TMB_Module.stop(self)
+
+    def play(self):
+        self.thread.addTask('play()')
+
+    def toggle(self):
+        self.thread.addTask('pause()')
+
+    def next(self):
+        self.thread.addTask('next()')
+    def previous(self):
+        self.thread.addTask('previous()')
+
+    def ls(self):
+        pass
+    def add(self, album):
+        self.thread.addTask('add({})'.format(album))
+    def clear(self):
+        self.thread.addTask('clear()')
+
         
          
