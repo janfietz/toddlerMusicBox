@@ -19,13 +19,13 @@
 
 
 import locale
-
 import os
 import re
-import select, sys
+import select, sys, getopt
 import time, threading
 from tmb_module_mpc import MPCModule
 import collections
+import logging
 
 # ------------------------------
 # global configuration
@@ -82,9 +82,9 @@ class ToddlerMusicBox():
 		self.loop = False
 
 	def _on_player(self, args):
-		print("Status: ", args['status']['state'])
+		logging.info("Status: ", args['status']['state'])
 		if len(args['current']):
-			print("Current Song: ", args['current']['artist'] , "-", args['current']['title'])
+			logging.info("Current Song: ", args['current']['artist'] , "-", args['current']['title'])
 		
 	def _processEvent(self, event):
 		try:
@@ -97,6 +97,7 @@ class ToddlerMusicBox():
 
 		self.loop = True
 
+		logging.debug("Start modules")
 		for module in self.modules:
 			module.start()
 		
@@ -113,6 +114,28 @@ class ToddlerMusicBox():
 				pass
 			time.sleep(0.1)
 
+		logging.debug("Stop modules")
 		for module in modules:
 			module.stop()
+
+	def main(self, argv):
+		loglevel = 'WARNING'
+		try:
+			opts, args = getopt.getopt(argv,"hi:o:",["loglevel="])
+		except getopt.GetoptError:
+			print 'toddlermusicbox --loglevel <level>'
+			sys.exit(2)
+		for opt, arg in opts:
+			if opt == '-h':
+		 		print 'toddlermusicbox --loglevel <DEBUG|INFO|WARNING|ERROR>'
+		 		sys.exit()
+			elif opt in ("--loglevel"):
+		 		loglevel = arg
+
+		numeric_level = getattr(logging, loglevel.upper(), None)
+		if not isinstance(numeric_level, int):
+			raise ValueError('Invalid log level: %s' % loglevel)
+		logging.basicConfig(format='%(message)s', level=numeric_level)
+
+		self.main_loop()
 				

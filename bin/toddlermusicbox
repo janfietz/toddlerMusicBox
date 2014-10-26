@@ -19,11 +19,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 '''ToddlerMusicBox'''
-from toddlermusicbox import tmb_main 
+import sys
+from toddlermusicbox import tmb_main
 import locale
 
 if __name__ == '__main__':
 	locale.setlocale(locale.LC_ALL,'')
+
 	tmb_main.read_conf()
 	with tmb_main.ToddlerMusicBox() as tmb:
-		tmb.main_loop()
+		tmb.main(sys.argv[1:])

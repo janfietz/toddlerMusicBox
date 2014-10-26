@@ -10,7 +10,7 @@ import re
 import select, sys
 import time, threading
 import tmb_module, tmb_main
-
+import logging
 
         
 class MPCThread(threading.Thread):
@@ -46,11 +46,11 @@ class MPCThread(threading.Thread):
             self._doConnect = False
             self._updateStatus()
             tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
-            print('MPC: connected')
+            logging.info('MPC: connected')
         except mpd.ConnectionError as e:
-            print("ConnectionError:", e)
+            logging.warning('ConnectionError: %s', e)
         except:
-            print("Unexpected error:", sys.exc_info()[0])
+            logging.debug('Unexpected error: %s', sys.exc_info()[0])
             self._doConnect = True
         
     def _enter_idle(self):
@@ -97,8 +97,6 @@ class MPCThread(threading.Thread):
 
             for event in events:
                 tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
-                #print('Status: ', self.status['state'])
-                #print('Current: ', self.currentsong)
 
         self._try_enter_idle()
         
@@ -123,7 +121,7 @@ class MPCThread(threading.Thread):
                                 if fd == self._mpc.fileno() and event & select.POLLIN:
                                     self._process(fd='mpd')
                 except mpd.ConnectionError:
-                    print('MPC: Connection lost')
+                    logging.info('MPC: disconnected')
                     self._mpc.disconnect()
                     self._doConnect = True 
            
