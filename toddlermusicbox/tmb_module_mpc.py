@@ -167,6 +167,7 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.start()
         
     def stop(self):
+        print("Stop MPCModule")
         self.thread.loop = False
         self.thread.join()
         tmb_module.TMB_Module.stop(self)

@@ -26,6 +26,8 @@ import time, threading
 from tmb_module_mpc import MPCModule
 import collections
 import logging
+import signal
+
 
 # ------------------------------
 # global configuration
@@ -82,9 +84,9 @@ class ToddlerMusicBox():
 		self.loop = False
 
 	def _on_player(self, args):
-		logging.info("Status: ", args['status']['state'])
+		logging.info('Status: %s', args['status']['state'])
 		if len(args['current']):
-			logging.info("Current Song: ", args['current']['artist'] , "-", args['current']['title'])
+			logging.info('Current Song: %s - %s', args['current']['artist'] , args['current']['title'])
 		
 	def _processEvent(self, event):
 		try:
@@ -92,7 +94,7 @@ class ToddlerMusicBox():
 		except AttributeError as e:
 			print(e)
 		
-
+    
 	def main_loop(self):
 
 		self.loop = True
@@ -101,21 +103,20 @@ class ToddlerMusicBox():
 		for module in self.modules:
 			module.start()
 		
-		while self.loop:
-			try:
-				processQueue = True
-				while processQueue:
-					self._processEvent(ToddlerMusicBox.eventQueue.popleft())
-
-				for module in modules:
-					module.update()
-
-			except IndexError:
-				pass
-			time.sleep(0.1)
+		try:
+			while self.loop:
+				try:
+					processQueue = True
+					while processQueue:
+						self._processEvent(ToddlerMusicBox.eventQueue.popleft())
+				except IndexError:
+					pass
+				time.sleep(0.1)
+		except KeyboardInterrupt:
+			self.loop = False
 
 		logging.debug("Stop modules")
-		for module in modules:
+		for module in reversed(self.modules):
 			module.stop()
 
 	def main(self, argv):
@@ -138,4 +139,3 @@ class ToddlerMusicBox():
 		logging.basicConfig(format='%(message)s', level=numeric_level)
 
 		self.main_loop()
-				
