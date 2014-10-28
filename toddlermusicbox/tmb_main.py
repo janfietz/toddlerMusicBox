@@ -21,7 +21,8 @@
 import locale
 import os
 import re
-import select, sys, getopt
+import select, sys
+import argparse
 import time, threading
 from tmb_module_mpc import MPCModule
 import collections
@@ -121,19 +122,14 @@ class ToddlerMusicBox():
 
 	def main(self, argv):
 		loglevel = 'WARNING'
-		try:
-			opts, args = getopt.getopt(argv,"hi:o:",["loglevel="])
-		except getopt.GetoptError:
-			print 'toddlermusicbox --loglevel <level>'
-			sys.exit(2)
-		for opt, arg in opts:
-			if opt == '-h':
-		 		print 'toddlermusicbox --loglevel <DEBUG|INFO|WARNING|ERROR>'
-		 		sys.exit()
-			elif opt in ("--loglevel"):
-		 		loglevel = arg
+		
+		parser = argparse.ArgumentParser(description='toddlerMusicBox options')
+		parser.add_argument('--loglevel', default='WARNING', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+						help='Set process verbosity')
+		parser.add_argument('--version', action='version', version='%(prog)s 0.1')
+		args = parser.parse_args()
 
-		numeric_level = getattr(logging, loglevel.upper(), None)
+		numeric_level = getattr(logging, args.loglevel.upper(), None)
 		if not isinstance(numeric_level, int):
 			raise ValueError('Invalid log level: %s' % loglevel)
 		logging.basicConfig(format='%(message)s', level=numeric_level)
