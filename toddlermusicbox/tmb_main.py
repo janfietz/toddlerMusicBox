@@ -19,7 +19,7 @@
 
 
 import locale
-import os
+import os, io
 import re
 import select, sys
 import argparse
@@ -28,41 +28,29 @@ from tmb_module_mpc import MPCModule
 import collections
 import logging
 import signal
+import ConfigParser
 
 
 # ------------------------------
 # global configuration
 # ------------------------------
 # Where conf files lie. Order IS important.
+defaults = """
+[mpc]
+enable=true
+mpd_host=localhost
+mpd_port=6600
+"""
+	
 conf_files = [os.path.expanduser('~/.tmb/tmb.conf'), '/etc/tmb.conf']
 # global conf
-conf = {}
+conf = ConfigParser.RawConfigParser(allow_no_value=True)
 def read_conf():
+	'''Read default values.'''
+	conf.readfp(io.BytesIO(defaults))
 	'''Read global configurations from file.'''
+	conf.read(conf_files)
 	
-	conf['MPC_MPD_HOST'] = 'localhost'
-	conf['MPC_MPD_PORT'] = 6600
-	
-	for cf in conf_files:
-		if not os.path.isfile(cf):
-			continue
-		with open(cf, 'rt') as f:
-			l_cnt = 0
-			for l in f:
-				l_cnt += 1
-				if l.startswith('#'):
-					continue
-				m = re.match(r'(\S+)\s+(\S+)', l)
-				if not m:
-					continue
-				g = m.groups()
-				if g[0] == 'MPC_MPD_HOST':
-					conf[g[0]] = g[1]
-				elif g[0] == 'MPC_MPD_PORT':
-					conf[g[0]] = int(g[1])
-				else:
-					raise Exception('Unknows option {} in conf file {}, line {}'.format(g[0], cf, l_cnt))
-		break
 
 class ToddlerMusicBox():
 	'''Main class'''
@@ -72,12 +60,14 @@ class ToddlerMusicBox():
 	def __init__(self):
 		self.loop = False
 		self.modules = []
-		
 
 	def __enter__(self):
 
 		'''Create Modules'''
-		self.modules.append(MPCModule(conf))
+		if conf.getboolean('mpc', 'enable'):
+			from tmb_module_mpc import MPCModule
+			self.mpc = MPCModule(conf)
+			self.modules.append(self.mpc)
 
 		return self
 

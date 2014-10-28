@@ -148,14 +148,14 @@ class MPCThread(threading.Thread):
            
 class MPCModule(tmb_module.TMB_Module):
     
-    def __init__(self, params):
+    def __init__(self, config):
         '''
         Constructor
         '''
-        tmb_module.TMB_Module.__init__(self, params)
+        tmb_module.TMB_Module.__init__(self, config)
         
-        self.host = params['MPC_MPD_HOST']
-        self.port = params['MPC_MPD_PORT']
+        self.host = config.get('mpc', 'mpd_host')
+        self.port = config.getint('mpc', 'mpd_port')
         
                 
     def start(self):
