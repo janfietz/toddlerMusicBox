@@ -25,6 +25,7 @@ import select, sys
 import argparse
 import time, threading
 from tmb_module_mpc import MPCModule
+from tmb_module_led import LedModule
 import collections
 import logging
 import signal
@@ -40,6 +41,13 @@ defaults = """
 enable=true
 mpd_host=localhost
 mpd_port=6600
+[led]
+enable=true
+count=1
+pin=18
+frequenz=800000
+dma=6
+invert=False
 """
 	
 conf_files = [os.path.expanduser('~/.tmb/tmb.conf'), '/etc/tmb.conf']
@@ -65,10 +73,12 @@ class ToddlerMusicBox():
 
 		'''Create Modules'''
 		if conf.getboolean('mpc', 'enable'):
-			from tmb_module_mpc import MPCModule
 			self.mpc = MPCModule(conf)
 			self.modules.append(self.mpc)
 
+		if conf.getboolean('led', 'enable'):
+			self.led = LedModule(conf)
+			self.modules.append(self.led)
 		return self
 
 	def __exit__(self, type, value, traceback):
