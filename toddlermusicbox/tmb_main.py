@@ -80,6 +80,8 @@ class ToddlerMusicBox():
 		self.loop = False
 		self.modules = []
 
+		self._playerstate = 'stop'
+
 	def __enter__(self):
 
 		'''Create Modules'''
@@ -101,11 +103,19 @@ class ToddlerMusicBox():
 
 	def _on_player(self, args):
 		logging.info('Status: %s', args['status']['state'])
+		self._playerstate = args['status']['state']
 		if len(args['current']):
 			logging.info('Current Song: %s - %s', args['current']['artist'] , args['current']['title'])
 	
 	def _on_input(self, args):
 		logging.info('action: %s %s', args['action'], args['state'])
+		if args['action'] == 'play':
+			if args['state'] == 'pressed':
+				self.mpc.toggle()
+				
+		if args['action'] == 'next':
+			if args['state'] == 'pressed':
+				self.mpc.next()
 		
 	def _processEvent(self, event):
 		try:
