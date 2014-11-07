@@ -37,6 +37,10 @@ class MPCThread(threading.Thread):
         self.tasks = collections.deque()
 
     @property
+    def mpdStatus(self):
+        return self.status
+
+    @property
     def loop(self):
         return self._loop
     
@@ -107,7 +111,9 @@ class MPCThread(threading.Thread):
                 try:
                     processQueue = True
                     while processQueue:
-                        exec('self._mpc.' + task.popleft())
+                        task = self.tasks.popleft()
+                        logging.info('MPC: execute: %s', task)
+                        exec('self._mpc.' + task)
                 except IndexError:
                     pass
                 self._mpc.command_list_end()
@@ -176,7 +182,10 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.addTask('play()')
 
     def toggle(self):
-        self.thread.addTask('pause()')
+        if self.thread.mpdStatus['state'] == 'play':
+            self.thread.addTask('pause()')
+        else:
+            self.thread.addTask('play()')            
 
     def next(self):
         self.thread.addTask('next()')
