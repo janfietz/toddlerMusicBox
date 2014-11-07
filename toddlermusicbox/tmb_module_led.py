@@ -8,8 +8,16 @@ import tmb_module, tmb_main
 import logging
 import collections
 import Queue
-from neopixel import *
-        
+
+use_ledmodule = True
+try:
+    from neopixel import *
+except ImportError:
+    logging.exception("Error importing neopixel!")
+    use_ledmodule = False
+    
+
+
 class LedThread(threading.Thread):
     '''
     classdocs
@@ -68,6 +76,9 @@ class LedModule(tmb_module.TMB_Module):
                 
     def start(self):
         tmb_module.TMB_Module.start(self)
+        
+        if not use_ledmodule:
+            return
         self._strip = Adafruit_NeoPixel(self._count, self._pin, self._frequenz, self._dma, self._invert)
         self._strip.begin()
 
@@ -83,18 +94,23 @@ class LedModule(tmb_module.TMB_Module):
         
     def stop(self):
         print("Stop LedModule")
-        self._thread.loop = False
-        self._thread.join()
+        if use_ledmodule:
+            self._thread.loop = False
+            self._thread.join()
+        
         tmb_module.TMB_Module.stop(self)
 
     def setBrightness(self, brightness):
-        self.thread.setBrightness('setBrightness({})'.format(brightness))
+        if use_ledmodule:
+            self.thread.setBrightness('setBrightness({})'.format(brightness))
 
     def setLedColor(self, n, color):
-        self.thread.setBrightness('setPixelColor({}, {})'.format(n, color))
+        if use_ledmodule:
+            self.thread.setBrightness('setPixelColor({}, {})'.format(n, color))
 
     def show(self):
-        self.thread.setBrightness('show()')
+        if use_ledmodule:
+            self.thread.setBrightness('show()')
 
         
          

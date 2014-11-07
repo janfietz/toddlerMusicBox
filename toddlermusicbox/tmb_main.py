@@ -24,12 +24,13 @@ import re
 import select, sys
 import argparse
 import time, threading
-from tmb_module_mpc import MPCModule
-from tmb_module_led import LedModule
 import collections
 import logging
 import signal
 import ConfigParser
+from tmb_module_mpc import MPCModule
+from tmb_module_led import LedModule
+from tmb_module_input import InputModule
 
 
 # ------------------------------
@@ -48,6 +49,16 @@ pin=18
 frequenz=800000
 dma=6
 invert=False
+[input]
+enable=true
+count=2
+bounce=200
+[input_1]
+channel=23
+action=play
+[input_2]
+channel=24
+action=next
 """
 	
 conf_files = [os.path.expanduser('~/.tmb/tmb.conf'), '/etc/tmb.conf']
@@ -79,6 +90,10 @@ class ToddlerMusicBox():
 		if conf.getboolean('led', 'enable'):
 			self.led = LedModule(conf)
 			self.modules.append(self.led)
+	
+		if conf.getboolean('input', 'enable'):
+			self.input = InputModule(conf)
+			self.modules.append(self.input)
 		return self
 
 	def __exit__(self, type, value, traceback):
@@ -88,13 +103,15 @@ class ToddlerMusicBox():
 		logging.info('Status: %s', args['status']['state'])
 		if len(args['current']):
 			logging.info('Current Song: %s - %s', args['current']['artist'] , args['current']['title'])
+	
+	def _on_input(self, args):
+		logging.info('action: %s %s', args['action'], args['state'])
 		
 	def _processEvent(self, event):
 		try:
 			getattr(self, "_on_%s" % event['type'])(event['args'])
 		except AttributeError as e:
-			print(e)
-		
+			logging.error(e)
     
 	def main_loop(self):
 

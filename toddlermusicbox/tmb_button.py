@@ -16,21 +16,36 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import tmb_main
+import collections
+import logging
 
-class TMB_Button(Object):
+class TMB_Button(object):
     '''
     classdocs
     '''
 
-    def __init__(self, params):
+    def __init__(self, section, config):
         '''
         Constructor
         '''
+        
+        self._channel = config.getint(section, 'channel')
+        self._action = config.get(section, 'action')
+        
         self._pressed = TMB_Button_StatePressed(self)
         self._unpressed = TMB_Button_StateUnpressed(self)
 
         self._stateMachine = TMB_Button_StateMachine(self._unpressed)
 
+    @property
+    def channel(self):
+        return self._channel
+    
+    @property
+    def action(self):
+        return self._action
+    
     @property
     def pressedState(self):
         return self._pressed
@@ -42,7 +57,10 @@ class TMB_Button(Object):
     def update(self):
         self._stateMachine.run()
 
-class TMB_Button_State(Object):
+    def switchState(self, channel):
+        self._stateMachine.run()
+
+class TMB_Button_State(object):
     '''
     classdocs
     '''
@@ -57,14 +75,13 @@ class TMB_Button_State(Object):
         pass
 
     def run(self):
-
+        pass
+    
     def leave(self):
         pass
 
     def next(self):
-        if not self.button.pressed():
-            return self.button.unpressedState
-        return self.button.pressedState
+        pass
 
 class TMB_Button_StatePressed(TMB_Button_State):
     '''
@@ -78,15 +95,19 @@ class TMB_Button_StatePressed(TMB_Button_State):
         TMB_Button_State.__init__(self, button)
 
     def enter(self):
-        pass
+        logging.debug('Button: %s enter state pressed.', self._button.action)
+        tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'input', args = dict(action = self._action, state = 'pressed')))
 
     def run(self):
         pass
 
     def leave(self):
-        pass
+        logging.debug('Button: %s leave state pressed.', self._button.action)
+    
+    def next(self):
+        return self.button.unpressedState
 
-class TMB_Button_StateUnpressed(Object):
+class TMB_Button_StateUnpressed(TMB_Button_State):
     '''
     classdocs
     '''
@@ -98,15 +119,19 @@ class TMB_Button_StateUnpressed(Object):
         pass
 
     def enter(self):
-        pass
+        logging.debug('Button: %s leave state unpressed.', self._button.action)
+        tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'input', args = dict(action = self._action, state = 'unpressed')))
 
     def run(self):
         pass
 
     def leave(self):
-        pass
+        logging.debug('Button: %s leave state unpressed.', self._button.action)
 
-class TMB_Button_StateMachine(Object):
+    def next(self):
+        return self.button.pressedState
+
+class TMB_Button_StateMachine(object):
     '''
     classdocs
     '''
