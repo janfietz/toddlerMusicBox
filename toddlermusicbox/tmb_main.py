@@ -51,14 +51,23 @@ dma=6
 invert=False
 [input]
 enable=true
-count=2
+count=5
 bounce=20
 [input_1]
-channel=16
+channel=11
 action=play
 [input_2]
-channel=18
+channel=15
 action=next
+[input_3]
+channel=13
+action=previous
+[input_4]
+channel=16
+action=vol_down
+[input_5]
+channel=18
+action=vol_up
 """
 	
 conf_files = [os.path.expanduser('~/.tmb/tmb.conf'), '/etc/tmb.conf']
@@ -110,12 +119,24 @@ class ToddlerMusicBox():
 	def _on_input(self, args):
 		logging.info('action: %s %s', args['action'], args['state'])
 		if args['action'] == 'play':
-			if args['state'] == 'pressed':
+			if args['state'] == 'unpressed':
 				self.mpc.toggle()
 				
 		if args['action'] == 'next':
-			if args['state'] == 'pressed':
+			if args['state'] == 'unpressed':
 				self.mpc.next()
+
+		if args['action'] == 'previous':
+			if args['state'] == 'unpressed':
+				self.mpc.previous()
+
+		if args['action'] == 'vol_up':
+			if args['state'] == 'pressed':
+				self.mpc.volume(5)
+				
+		if args['action'] == 'vol_down':
+			if args['state'] == 'pressed':
+				self.mpc.volume(-10)
 		
 	def _processEvent(self, event):
 		try:

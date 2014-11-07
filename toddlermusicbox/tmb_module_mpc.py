@@ -189,15 +189,22 @@ class MPCModule(tmb_module.TMB_Module):
 
     def next(self):
         self.thread.addTask('next()')
+
     def previous(self):
         self.thread.addTask('previous()')
 
     def ls(self):
+        #self.thread.addTask('listall()')
         pass
+
     def add(self, album):
         self.thread.addTask('add({})'.format(album))
+
     def clear(self):
         self.thread.addTask('clear()')
+
+    def volume(self, relativeVolume):
+        self.thread.addTask('volume({})'.format(relativeVolume))
 
         
          
