@@ -52,12 +52,12 @@ invert=False
 [input]
 enable=true
 count=2
-bounce=200
+bounce=20
 [input_1]
-channel=23
+channel=16
 action=play
 [input_2]
-channel=24
+channel=18
 action=next
 """
 	
