@@ -93,7 +93,6 @@ class LedModule(tmb_module.TMB_Module):
         self._thread.start()
         
     def stop(self):
-        print("Stop LedModule")
         if use_ledmodule:
             self._thread.loop = False
             self._thread.join()

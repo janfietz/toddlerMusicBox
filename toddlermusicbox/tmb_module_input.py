@@ -36,7 +36,6 @@ class InputModule(tmb_module.TMB_Module):
             
     def start(self):
         tmb_module.TMB_Module.start(self)
-        logging.debug('Start InputModule')
 
         if not use_inputmodule:
             return
@@ -50,7 +49,6 @@ class InputModule(tmb_module.TMB_Module):
         
         
     def stop(self):
-        logging.debug('Stop InputModule')
         if use_inputmodule:
             GPIO.cleanup()
         tmb_module.TMB_Module.stop(self)

@@ -150,6 +150,7 @@ class ToddlerMusicBox():
 
 		logging.debug("Start modules")
 		for module in self.modules:
+			logging.debug('Start %s', type(module).__name__)
 			module.start()
 		
 		try:
@@ -167,6 +168,7 @@ class ToddlerMusicBox():
 		logging.debug("Stop modules")
 		for module in reversed(self.modules):
 			module.stop()
+			logging.debug('Stopped %s', type(module).__name__)
 
 	def main(self, argv):
 		loglevel = 'WARNING'

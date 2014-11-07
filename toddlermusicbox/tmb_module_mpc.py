@@ -173,7 +173,6 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.start()
         
     def stop(self):
-        print("Stop MPCModule")
         self.thread.loop = False
         self.thread.join()
         tmb_module.TMB_Module.stop(self)
@@ -185,7 +184,7 @@ class MPCModule(tmb_module.TMB_Module):
         if self.thread.mpdStatus['state'] == 'play':
             self.thread.addTask('pause()')
         else:
-            self.thread.addTask('play()')            
+            self.thread.addTask('play()')
 
     def next(self):
         self.thread.addTask('next()')
@@ -205,6 +204,3 @@ class MPCModule(tmb_module.TMB_Module):
 
     def volume(self, relativeVolume):
         self.thread.addTask('volume({})'.format(relativeVolume))
-
-        
-         
