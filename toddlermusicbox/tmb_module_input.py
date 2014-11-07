@@ -33,23 +33,25 @@ class InputModule(tmb_module.TMB_Module):
         for i in range(self._count):
             button = TMB_Button('input_{0}'.format(i + 1), config)
             self._buttons.append(button)
-            if use_inputmodule:
-                GPIO.setup(button.channel, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-                GPIO.add_event_detect(button.channel, GPIO.BOTH, callback=button.switchState, bouncetime=self._bounce)
-    
+            
     def start(self):
         tmb_module.TMB_Module.start(self)
+        logging.debug('Start InputModule')
 
         if not use_inputmodule:
             return
+        logging.debug('InputModule: Set GPIO')
         GPIO.setmode(GPIO.BOARD)
+
+        for button in self._buttons:
+            logging.debug('InputModule: Configure buttons: %s channel: %i', button.action, button.channel)
+            GPIO.setup(button.channel, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            GPIO.add_event_detect(button.channel, GPIO.BOTH, callback=button.switchState, bouncetime=self._bounce)
         
         
     def stop(self):
-        print("Stop InputModule")
+        logging.debug('Stop InputModule')
         if use_inputmodule:
             GPIO.cleanup()
-            
-            
         tmb_module.TMB_Module.stop(self)
 
