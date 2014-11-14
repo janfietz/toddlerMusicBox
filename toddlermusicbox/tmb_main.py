@@ -44,7 +44,7 @@ mpd_host=localhost
 mpd_port=6600
 [led]
 enable=true
-count=1
+count=2
 pin=18
 frequenz=800000
 dma=6
@@ -89,7 +89,7 @@ class ToddlerMusicBox():
 		self.loop = False
 		self.modules = []
 
-		self._playerstate = 'stop'
+		self._playerstate = 'none'
 
 	def __enter__(self):
 
@@ -112,9 +112,17 @@ class ToddlerMusicBox():
 
 	def _on_player(self, args):
 		logging.info('Status: %s', args['status']['state'])
+		playerStateChanged = self._playerstate != args['status']['state']
 		self._playerstate = args['status']['state']
 		if len(args['current']):
 			logging.info('Current Song: %s - %s', args['current']['artist'] , args['current']['title'])
+
+		if playerStateChanged and self._playerstate == 'play':
+			self.led.setFadeLedColorRGB(0, 0, 255, 0)
+		if playerStateChanged and self._playerstate == 'stop':
+			self.led.setFadeLedColorRGB(0, 255, 0, 0)
+		if playerStateChanged and self._playerstate == 'pause':
+			self.led.setFadeLedColorRGB(0, 0, 0, 255)
 	
 	def _on_input(self, args):
 		logging.info('action: %s %s', args['action'], args['state'])
@@ -128,6 +136,7 @@ class ToddlerMusicBox():
 
 		if args['action'] == 'previous':
 			if args['state'] == 'unpressed':
+
 				self.mpc.previous()
 
 		if args['action'] == 'vol_up':
@@ -161,6 +170,10 @@ class ToddlerMusicBox():
 						self._processEvent(ToddlerMusicBox.eventQueue.popleft())
 				except IndexError:
 					pass
+
+				for module in self.modules:
+					module.update()
+			
 				time.sleep(0.1)
 		except KeyboardInterrupt:
 			self.loop = False
