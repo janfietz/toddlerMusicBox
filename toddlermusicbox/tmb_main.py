@@ -49,6 +49,16 @@ pin=18
 frequenz=800000
 dma=6
 invert=False
+[led_0]
+name=play
+[led_1]
+name=next
+[led_2]
+name=previous
+[led_3]
+name=vol_up
+[led_4]
+name=vol_down
 [input]
 enable=true
 count=5
@@ -118,11 +128,11 @@ class ToddlerMusicBox():
 			logging.info('Current Song: %s - %s', args['current']['artist'] , args['current']['title'])
 
 		if playerStateChanged and self._playerstate == 'play':
-			self.led.setFadeLedColorRGB(0, 0, 255, 0)
+			self.led.setFadeLedColorRGB('play', 0, 255, 0)
 		if playerStateChanged and self._playerstate == 'stop':
-			self.led.setFadeLedColorRGB(0, 255, 0, 0)
+			self.led.setFadeLedColorRGB('play', 255, 0, 0)
 		if playerStateChanged and self._playerstate == 'pause':
-			self.led.setFadeLedColorRGB(0, 0, 0, 255)
+			self.led.setFadeLedColorRGB('play', 0, 0, 255)
 	
 	def _on_input(self, args):
 		logging.info('action: %s %s', args['action'], args['state'])
