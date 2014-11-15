@@ -156,6 +156,12 @@ class LedModule(tmb_module.TMB_Module):
 		self._dma = config.getint('led', 'dma')
 		self._invert = config.getboolean('led', 'invert')
 		self._strip = None
+		
+		self._ledmapping = {}
+		for i in range(self._count):
+			section = 'input_{0}'.format(i)
+			name = config.get(section, 'name')
+			self._ledmapping[name] = i
 
 		self._led = 0
 		self._color = 0
@@ -195,20 +201,24 @@ class LedModule(tmb_module.TMB_Module):
 		self.setLedColor(led, Color(r, g, b))
 
 	def setLedColor(self, led, color):
-		if use_ledmodule:
-			self._thread.addTask(dict(target = 'strip', function = 'setPixelColor({}, {})'.format(led, color)))
+		if led in self._ledmapping:
+			mappedLed = self._ledmapping[led]
+			if use_ledmodule:
+				self._thread.addTask(dict(target = 'strip', function = 'setPixelColor({}, {})'.format(mappedLed, color)))
 
 	def setFadeLedColorRGB(self, led, r, g, b, steps = 15):
 		self.setFadeLedColor(led, Color(r, g, b), steps)
 
 	def setFadeLedColor(self, led, color, steps = 15):
-		if use_ledmodule:
-			self._thread.addTask(dict(
-				target = 'self', 
-				function = 'fade',
-				arguments = [led, color, steps]
-				)
-			)
+		if led in self._ledmapping:
+			mappedLed = self._ledmapping[led]
+			if use_ledmodule:
+				self._thread.addTask(dict(
+										target = 'self', 
+										function = 'fade',
+										arguments = [led, color, steps]
+										)
+									)
 
 	def pulse(self, led, steps = 15):
 		if use_ledmodule:
