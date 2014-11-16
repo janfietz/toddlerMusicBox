@@ -159,9 +159,11 @@ class LedModule(tmb_module.TMB_Module):
 		
 		self._ledmapping = {}
 		for i in range(self._count):
-			section = 'input_{0}'.format(i)
+			section = 'led_{0}'.format(i)
 			name = config.get(section, 'name')
 			self._ledmapping[name] = i
+
+		print(self._ledmapping)
 
 		self._led = 0
 		self._color = 0
@@ -177,8 +179,8 @@ class LedModule(tmb_module.TMB_Module):
 
 		''' initialize led '''
 		
-		for i in range(self._count):
-			self.setLedColor(i, (Color(255,255,255) / self._count) * i )
+		for key in self._ledmapping.keys():
+			self.setLedColor(key, Color(0,0,255))
 		
 		
 		self._thread.start()
@@ -198,7 +200,7 @@ class LedModule(tmb_module.TMB_Module):
 			self._thread.addTask(dict(target = 'strip', function = 'setBrightness({})'.format(brightness)))
 
 	def setLedColorRGB(self, led, r, g, b):
-		self.setLedColor(led, Color(r, g, b))
+		self.setLedColor(led, Color(g, r, b))
 
 	def setLedColor(self, led, color):
 		if led in self._ledmapping:
@@ -207,7 +209,7 @@ class LedModule(tmb_module.TMB_Module):
 				self._thread.addTask(dict(target = 'strip', function = 'setPixelColor({}, {})'.format(mappedLed, color)))
 
 	def setFadeLedColorRGB(self, led, r, g, b, steps = 15):
-		self.setFadeLedColor(led, Color(r, g, b), steps)
+		self.setFadeLedColor(led, Color(g, r, b), steps)
 
 	def setFadeLedColor(self, led, color, steps = 15):
 		if led in self._ledmapping:
@@ -216,7 +218,7 @@ class LedModule(tmb_module.TMB_Module):
 				self._thread.addTask(dict(
 										target = 'self', 
 										function = 'fade',
-										arguments = [led, color, steps]
+										arguments = [mappedLed, color, steps]
 										)
 									)
 
