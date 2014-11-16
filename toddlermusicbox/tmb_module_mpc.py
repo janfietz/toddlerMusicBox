@@ -56,6 +56,8 @@ class MPCThread(threading.Thread):
             self._mpc.connect(self._host, self._port)
             self._doConnect = False
             self._updateStatus()
+            self._updatePlaylist()
+            tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'playlist', args = dict(playlist = self.playlist)))
             tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
             logging.info('MPC: connected')
         except mpd.ConnectionError as e:
@@ -94,16 +96,22 @@ class MPCThread(threading.Thread):
         self.status = self._mpc.status()
         self.stats = self._mpc.stats()
         self.currentsong = self._mpc.currentsong()
+
+    def _updatePlaylist(self):
+        self.playlist = self._mpc.playlist()
     
     def _process(self, fd):
         '''Process init/timeout/mpd events. Called in main loop.'''
 
         self._syncMPD = True
         notify = False
+        refreshplaylist = False
         if self._syncMPD:
             events = self._try_leave_idle()
             if events:
                 notify = True
+                if 'playlist' in events:
+                    refreshplaylist = True
 
             if self.tasks:
                 notify = True
@@ -119,6 +127,8 @@ class MPCThread(threading.Thread):
                 self._mpc.command_list_end()
 
             self._updateStatus()
+            if refreshplaylist:
+                self._updatePlaylist()
 
         
         self._syncMPD = False
@@ -126,6 +136,8 @@ class MPCThread(threading.Thread):
         
         if notify:
             tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
+        if refreshplaylist:
+            tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'playlist', args = dict(playlist = self.playlist)))
 
     def run(self):
         
