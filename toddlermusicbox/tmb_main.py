@@ -99,7 +99,8 @@ class ToddlerMusicBox():
 		self.loop = False
 		self.modules = []
 
-		self._playerstate = 'none'
+		self._mpdstatus = {}
+		self._playList = []
 
 	def __enter__(self):
 
@@ -120,19 +121,51 @@ class ToddlerMusicBox():
 	def __exit__(self, type, value, traceback):
 		self.loop = False
 
+	def _updateState(self):
+		if 'state' in self._mpdstatus.keys():
+			if self._mpdstatus['state'] == 'play':
+				self.led.setFadeLedColorRGB('play', 81, 189, 31)
+			if self._mpdstatus['state'] == 'stop':
+				if len(self._playList) == 0:
+					self.led.setLedColorRGB('play', 0x29, 0x00, 0x02)
+				else:
+					self.led.setFadeLedColorRGB('play', 0xe4, 0x24, 0x2e)
+			if self._mpdstatus['state'] == 'pause':
+				self.led.setFadeLedColorRGB('play', 255, 109, 0)
+
+			''' update volume '''
+
+		self.led.setFadeLedColorRGB('vol_up', 150, 255, 150)
+		self.led.setFadeLedColorRGB('vol_down', 150, 150, 150)
+
+		if 'next' in self._mpdstatus.keys():
+			self.led.setFadeLedColorRGB('next', 255, 255, 255)
+		else:
+			if 'repeat' in self._mpdstatus.keys():
+				if self._mpdstatus['repeat']:
+					self.led.setFadeLedColorRGB('next', 255, 214, 0)
+				else:
+					self.led.setFadeLedColorRGB('next', 0, 0, 0)		
+
+
 	def _on_player(self, args):
 		logging.info('Status: %s', args['status']['state'])
-		playerStateChanged = self._playerstate != args['status']['state']
-		self._playerstate = args['status']['state']
+		print(args['status'])
+		if 'state' in self._mpdstatus.keys():
+			playerStateChanged = self._mpdstatus['state'] != args['status']['state']
+		else:
+			playerStateChanged = True
+		self._mpdstatus = args['status']
 		if len(args['current']):
 			logging.info('Current Song: %s - %s', args['current']['artist'] , args['current']['title'])
 
-		if playerStateChanged and self._playerstate == 'play':
-			self.led.setFadeLedColorRGB('play', 0, 255, 0)
-		if playerStateChanged and self._playerstate == 'stop':
-			self.led.setFadeLedColorRGB('play', 255, 0, 0)
-		if playerStateChanged and self._playerstate == 'pause':
-			self.led.setFadeLedColorRGB('play', 0, 0, 255)
+		if playerStateChanged:
+			self._updateState()
+
+	def _on_playlist(self, args):
+		logging.info('Playlist: %i', len(args['playlist']))
+		self._playList = args['playlist']
+		self._updateState()
 	
 	def _on_input(self, args):
 		logging.info('action: %s %s', args['action'], args['state'])
