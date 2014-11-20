@@ -31,6 +31,7 @@ import ConfigParser
 from tmb_module_mpc import MPCModule
 from tmb_module_led import LedModule
 from tmb_module_input import InputModule
+from tmb_module_nfc import NFCModule
 
 
 # ------------------------------
@@ -64,20 +65,22 @@ enable=true
 count=5
 bounce=20
 [input_1]
-channel=11
+channel=35
 action=play
 [input_2]
-channel=15
+channel=37
 action=next
 [input_3]
-channel=13
+channel=36
 action=previous
 [input_4]
-channel=16
+channel=38
 action=vol_down
 [input_5]
-channel=18
+channel=40
 action=vol_up
+[nfc]
+enable=true
 """
 	
 conf_files = [os.path.expanduser('~/.tmb/tmb.conf'), '/etc/tmb.conf']
@@ -116,6 +119,10 @@ class ToddlerMusicBox():
 		if conf.getboolean('input', 'enable'):
 			self.input = InputModule(conf)
 			self.modules.append(self.input)
+
+		if conf.getboolean('nfc', 'enable'):
+			self.nfc = NFCModule(conf)
+			self.modules.append(self.nfc)
 		return self
 
 	def __exit__(self, type, value, traceback):
@@ -189,7 +196,10 @@ class ToddlerMusicBox():
 		if args['action'] == 'vol_down':
 			if args['state'] == 'pressed':
 				self.mpc.volume(-10)
-		
+
+	def _on_nfc(self, args):
+		logging.info('nfc uid: %s', args['uid'])
+
 	def _processEvent(self, event):
 		try:
 			getattr(self, "_on_%s" % event['type'])(event['args'])
