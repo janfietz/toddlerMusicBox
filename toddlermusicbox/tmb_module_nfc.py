@@ -11,7 +11,7 @@ import Queue
 
 use_nxpmodule = True
 try:
-	from nxppy import Mifare
+	from nxppy import Mifare, SelectError
 except ImportError:
 	logging.exception("Error importing nxppy!")
 	use_nxpmodule = False
@@ -21,14 +21,14 @@ class NFCThread(threading.Thread):
 	classdocs
 	'''
 
-	def __init__(self, strip):
+	def __init__(self):
 		'''
 		Constructor
 		'''
 		threading.Thread.__init__(self)
 		
 		self._loop = True
-		self._uid = ''
+		self._uid = None
 
 		self.tasks = Queue.Queue()
 
@@ -55,9 +55,13 @@ class NFCThread(threading.Thread):
 		try:
 			uid = mifare.select()
 		except SelectError:
-			self._uid = ''
+			uid = ''
+		
+		if uid == 'None':
+			uid = ''
 
 		if uid != self._uid:
+			logging.debug('NFC: uid %s', uid)
 			self._uid = uid
 			self._sendEvent()
 
