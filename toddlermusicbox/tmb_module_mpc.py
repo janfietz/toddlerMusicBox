@@ -19,7 +19,7 @@ class MPCThread(threading.Thread):
     classdocs
     '''
 
-    def __init__(self, mpc, host, port):
+    def __init__(self, host, port):
         '''
         Constructor
         '''
@@ -27,7 +27,7 @@ class MPCThread(threading.Thread):
         
         self._host = host
         self._port = port
-        self._mpc = mpc
+        self._mpc = mpd.MPDClient()
         
         self._doConnect = True
         self._loop = True
@@ -179,8 +179,7 @@ class MPCModule(tmb_module.TMB_Module):
     def start(self):
         tmb_module.TMB_Module.start(self)
         
-        self.mpc = mpd.MPDClient()
-        self.thread = MPCThread(self.mpc, self.host, self.port)
+        self.thread = MPCThread(self.host, self.port)
         
         self.thread.start()
         
@@ -205,11 +204,18 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.addTask('previous()')
 
     def ls(self):
-        #self.thread.addTask('listall()')
-        pass
+        mpc = mpd.MPDClient()
+        try:
+            mpc.connect(self.host, self.port)
+            return mpc.lsinfo()
+        except mpd.ConnectionError as e:
+            logging.warning('ConnectionError: %s', e)
+        except:
+            logging.debug('Unexpected error: %s', sys.exc_info()[0])
+        return None
 
     def add(self, album):
-        self.thread.addTask('add({})'.format(album))
+        self.thread.addTask('add(\'{}\')'.format(album))
 
     def clear(self):
         self.thread.addTask('clear()')
