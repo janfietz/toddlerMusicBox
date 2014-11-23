@@ -57,7 +57,7 @@ class NFCThread(threading.Thread):
 		except SelectError:
 			uid = ''
 		
-		if uid == 'None':
+		if uid == None:
 			uid = ''
 
 		if uid != self._uid:
