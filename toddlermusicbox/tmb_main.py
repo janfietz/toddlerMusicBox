@@ -157,7 +157,6 @@ class ToddlerMusicBox():
 
 	def _on_player(self, args):
 		logging.info('Status: %s', args['status']['state'])
-		print(args['status'])
 		if 'state' in self._mpdstatus.keys():
 			playerStateChanged = self._mpdstatus['state'] != args['status']['state']
 		else:
@@ -198,7 +197,18 @@ class ToddlerMusicBox():
 				self.mpc.volume(-10)
 
 	def _on_nfc(self, args):
-		logging.info('nfc uid: %s', args['uid'])
+		if len(args['uid']) > 0:
+			lsResult = self.mpc.ls()
+			if lsResult:
+				for entry in lsResult:
+					if 'directory' in entry.keys():
+						if entry['directory'] == args['uid']:
+							self.mpc.clear()
+							self.mpc.add(entry['directory'])
+							self.mpc.play()
+		else:
+			self.mpc.clear()
+							
 
 	def _processEvent(self, event):
 		try:
