@@ -167,7 +167,7 @@ class LedModule(tmb_module.TMB_Module):
 
 		self._led = 0
 		self._color = 0
-				
+
 	def start(self):
 		tmb_module.TMB_Module.start(self)
 		
@@ -178,9 +178,8 @@ class LedModule(tmb_module.TMB_Module):
 		self._thread = LedThread(self._strip)
 
 		''' initialize led '''
-		
 		for key in self._ledmapping.keys():
-			self.setLedColor(key, Color(0,0,255))
+			self.setLedColor(key, 0x0000FF)
 		
 		
 		self._thread.start()
@@ -199,19 +198,16 @@ class LedModule(tmb_module.TMB_Module):
 		if use_ledmodule:
 			self._thread.addTask(dict(target = 'strip', function = 'setBrightness({})'.format(brightness)))
 
-	def setLedColorRGB(self, led, r, g, b):
-		self.setLedColor(led, Color(g, r, b))
-
-	def setLedColor(self, led, color):
+	def setLedColor(self, led, colorvalue):
+		color = Color((colorvalue >> 8) & 0xFF, (colorvalue >> 16) & 0xFF, colorvalue & 0xFF)
 		if led in self._ledmapping:
 			mappedLed = self._ledmapping[led]
 			if use_ledmodule:
 				self._thread.addTask(dict(target = 'strip', function = 'setPixelColor({}, {})'.format(mappedLed, color)))
 
-	def setFadeLedColorRGB(self, led, r, g, b, steps = 15):
-		self.setFadeLedColor(led, Color(g, r, b), steps)
-
-	def setFadeLedColor(self, led, color, steps = 15):
+	def setFadeLedColor(self, led, colorvalue, steps = 15):
+		
+		color = Color((colorvalue >> 8) & 0xFF, (colorvalue >> 16) & 0xFF, colorvalue & 0xFF)
 		if led in self._ledmapping:
 			mappedLed = self._ledmapping[led]
 			if use_ledmodule:

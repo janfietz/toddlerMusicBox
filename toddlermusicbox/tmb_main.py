@@ -28,6 +28,7 @@ import collections
 import logging
 import signal
 import ConfigParser
+import json
 from tmb_module_mpc import MPCModule
 from tmb_module_led import LedModule
 from tmb_module_input import InputModule
@@ -81,11 +82,45 @@ channel=40
 action=vol_up
 [nfc]
 enable=true
+[colortheme_default]
+colors={
+	"play": "0x51BD1F",
+	"pause": "0xFF6D00",
+	"stop": "0xE4242E",
+	"emptyplaylist": "0x290002",
+	"next": "0xFFD600",
+	"next_inactive": "0x3E3400",
+	"prev": "0xFFD600",
+	"prev_inactive": "0x3E3400",
+	"vol_up_100": "0x46084E",
+	"vol_up_90": "0x46084E",
+	"vol_up_80": "0x46084E",
+	"vol_up_70": "0x46084E",
+	"vol_up_60": "0x46084E",
+	"vol_up_50": "0x46084E",
+	"vol_up_40": "0x46084E",
+	"vol_up_30": "0x46084E",
+	"vol_up_20": "0x46084E",
+	"vol_up_10": "0x46084E",
+	"vol_up_00": "0x46084E",
+	"vol_down_100": "0x46084E",
+	"vol_down_90": "0x46084E",
+	"vol_down_80": "0x46084E",
+	"vol_down_70": "0x46084E",
+	"vol_down_60": "0x46084E",
+	"vol_down_50": "0x46084E",
+	"vol_down_40": "0x46084E",
+	"vol_down_30": "0x46084E",
+	"vol_down_20": "0x46084E",
+	"vol_down_10": "0x46084E",
+	"vol_down_00": "0x46084E" 
+	}
 """
 	
 conf_files = [os.path.expanduser('~/.tmb/tmb.conf'), '/etc/tmb.conf']
 # global conf
 conf = ConfigParser.RawConfigParser(allow_no_value=True)
+
 def read_conf():
 	'''Read default values.'''
 	conf.readfp(io.BytesIO(defaults))
@@ -97,6 +132,39 @@ class ToddlerMusicBox():
 	'''Main class'''
 
 	eventQueue = collections.deque()
+	
+	defaultcolors = {
+				'play': 0x0000FF,
+				'pause': 0x0000FF,
+				'stop':  0x0000FF,
+				'emptyplaylist':  0x0000FF,
+				'next':  0x0000FF,
+				'next_inactive':  0x0000FF,
+				'previous':  0x0000FF,
+				'previous_inactive':  0x0000FF,
+				'vol_up_100':  0x0000FF,
+				'vol_up_90':  0x0000FF,
+				'vol_up_80':  0x0000FF,
+				'vol_up_70':  0x0000FF,
+				'vol_up_60':  0x0000FF,
+				'vol_up_50':  0x0000FF,
+				'vol_up_40':  0x0000FF,
+				'vol_up_30':  0x0000FF,
+				'vol_up_20':  0x0000FF,
+				'vol_up_10':  0x0000FF,
+				'vol_up_00':  0x0000FF,
+				'vol_down_100':  0x0000FF,
+				'vol_down_90':  0x0000FF,
+				'vol_down_80':  0x0000FF,
+				'vol_down_70':  0x0000FF,
+				'vol_down_60':  0x0000FF,
+				'vol_down_50':  0x0000FF,
+				'vol_down_40':  0x0000FF,
+				'vol_down_30':  0x0000FF,
+				'vol_down_20':  0x0000FF,
+				'vol_down_10':  0x0000FF,
+				'vol_down_00':  0x0000FF,
+				}
 	
 	def __init__(self):
 		self.loop = False
@@ -112,6 +180,13 @@ class ToddlerMusicBox():
 			self.mpc = MPCModule(conf)
 			self.modules.append(self.mpc)
 
+		'''load default color theme'''
+		#try:
+		colorThemeDef = conf.get('colortheme_default', 'colors')
+		self._colorTheme = json.loads(colorThemeDef)
+		#except:
+		#	self._colorTheme = ToddlerMusicBox.defaultcolors
+
 		if conf.getboolean('led', 'enable'):
 			self.led = LedModule(conf)
 			self.modules.append(self.led)
@@ -123,36 +198,43 @@ class ToddlerMusicBox():
 		if conf.getboolean('nfc', 'enable'):
 			self.nfc = NFCModule(conf)
 			self.modules.append(self.nfc)
+		
 		return self
 
 	def __exit__(self, type, value, traceback):
 		self.loop = False
+		
+	def _queryColor(self, colorname):
+		if colorname in self._colorTheme.keys():
+			return int(self._colorTheme[colorname], 16)
+		return 0x0000FF
 
 	def _updateState(self):
 		if 'state' in self._mpdstatus.keys():
 			if self._mpdstatus['state'] == 'play':
-				self.led.setFadeLedColorRGB('play', 81, 189, 31)
+				self.led.setFadeLedColor('play', self._queryColor('play'))
 			if self._mpdstatus['state'] == 'stop':
 				if len(self._playList) == 0:
-					self.led.setLedColorRGB('play', 0x29, 0x00, 0x02)
+					self.led.setFadeLedColor('play', self._queryColor('emptyplaylist'))
 				else:
-					self.led.setFadeLedColorRGB('play', 0xe4, 0x24, 0x2e)
+					self.led.setFadeLedColor('play', self._queryColor('stop'))
 			if self._mpdstatus['state'] == 'pause':
-				self.led.setFadeLedColorRGB('play', 255, 109, 0)
+				self.led.setFadeLedColor('play', self._queryColor('pause'))
 
 			''' update volume '''
-
-		self.led.setFadeLedColorRGB('vol_up', 150, 255, 150)
-		self.led.setFadeLedColorRGB('vol_down', 150, 150, 150)
+		self.led.setFadeLedColor('vol_up', self._queryColor('vol_up_100'))
+		self.led.setFadeLedColor('vol_down', self._queryColor('vol_down_100'))
 
 		if 'next' in self._mpdstatus.keys():
-			self.led.setFadeLedColorRGB('next', 255, 255, 255)
+			self.led.setFadeLedColor('next', self._queryColor('next'))
 		else:
 			if 'repeat' in self._mpdstatus.keys():
 				if self._mpdstatus['repeat']:
-					self.led.setFadeLedColorRGB('next', 255, 214, 0)
+					self.led.setFadeLedColor('next', self._queryColor('next'))
 				else:
-					self.led.setFadeLedColorRGB('next', 0, 0, 0)		
+					self.led.setFadeLedColor('next', self._queryColor('next_inactive'))
+		
+		self.led.setFadeLedColor('previous', self._queryColor('previous'))
 
 
 	def _on_player(self, args):
