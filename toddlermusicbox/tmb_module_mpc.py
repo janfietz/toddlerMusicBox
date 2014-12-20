@@ -12,7 +12,7 @@ import time, threading
 import tmb_module, tmb_main
 import logging
 import collections
-
+import alsaaudio
         
 class MPCThread(threading.Thread):
     '''
@@ -221,4 +221,9 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.addTask('clear()')
 
     def volume(self, relativeVolume):
-        self.thread.addTask('volume({})'.format(relativeVolume))
+        '''self.thread.addTask('volume({})'.format(relativeVolume))'''
+        mixer = alsaaudio.Mixer(u'Speaker', 0, 1)
+        vol = mixer.getvolume()
+        logging.debug('Current alsa volume: {}'.format(vol))
+        vol[0] += relativeVolume
+        mixer.setvolume(vol[0])
