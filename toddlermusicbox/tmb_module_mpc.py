@@ -226,4 +226,5 @@ class MPCModule(tmb_module.TMB_Module):
         vol = mixer.getvolume()
         logging.debug('Current alsa volume: {}'.format(vol))
         vol[0] += relativeVolume
+        vol[0] = max(0, min(vol[0], 100))
         mixer.setvolume(vol[0])
