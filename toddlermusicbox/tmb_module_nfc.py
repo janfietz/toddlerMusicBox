@@ -29,6 +29,7 @@ class NFCThread(threading.Thread):
 		
 		self._loop = True
 		self._uid = None
+		self._resetCnt = 0
 
 		self.tasks = Queue.Queue()
 
@@ -50,7 +51,7 @@ class NFCThread(threading.Thread):
 		tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'nfc', args = dict(uid = self._uid)))
 
 	def _updateId(self, mifare):
-
+		
 		uid = self._uid
 		try:
 			uid = mifare.select()
@@ -59,11 +60,16 @@ class NFCThread(threading.Thread):
 		
 		if uid == None:
 			uid = ''
-
-		if uid != self._uid:
+		if uid == '':
+			self._resetCnt += 1
+		else:
+			self._resetCnt = 5
+		if (uid != self._uid) and (self._resetCnt == 5):
 			logging.debug('NFC: uid %s', uid)
 			self._uid = uid
 			self._sendEvent()
+		if self._resetCnt == 5:
+			self._resetCnt = 0
 
 	def run(self):
 		mifare = Mifare()
