@@ -44,6 +44,9 @@ defaults = """
 enable=true
 mpd_host=localhost
 mpd_port=6600
+mixer_control=SPEAKER
+mixer_id=0
+mixer_cardidx=1
 [led]
 enable=true
 count=5
