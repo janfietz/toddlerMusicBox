@@ -130,7 +130,7 @@ class MPCThread(threading.Thread):
             if refreshplaylist:
                 self._updatePlaylist()
 
-        
+
         self._syncMPD = False
         self._try_enter_idle()
         
@@ -174,8 +174,11 @@ class MPCModule(tmb_module.TMB_Module):
         
         self.host = config.get('mpc', 'mpd_host')
         self.port = config.getint('mpc', 'mpd_port')
-        
-                
+
+        self.mixerControl = config.get('mpc', 'mixer_control')
+        self.mixerId = config.getint('mpc', 'mixer_id')
+        self.mixerCardIdx = config.getint('mpc', 'mixer_cardidx')
+
     def start(self):
         tmb_module.TMB_Module.start(self)
         
@@ -221,8 +224,7 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.addTask('clear()')
 
     def volume(self, relativeVolume):
-        '''self.thread.addTask('volume({})'.format(relativeVolume))'''
-        mixer = alsaaudio.Mixer(u'Speaker', 0, 1)
+        mixer = alsaaudio.Mixer(self.mixerControl, self.mixerId, self.mixerCardIdx)
         vol = mixer.getvolume()
         logging.debug('Current alsa volume: {}'.format(vol))
         vol[0] += relativeVolume

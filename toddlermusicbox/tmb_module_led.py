@@ -13,223 +13,220 @@ from array import array
 
 use_ledmodule = True
 try:
-	from neopixel import *
+    from neopixel import *
 except ImportError:
-	logging.exception("Error importing neopixel!")
-	use_ledmodule = False
-	
+    logging.exception("Error importing neopixel!")
+    use_ledmodule = False
+    
 
 
 class LedThread(threading.Thread):
-	'''
-	classdocs
-	'''
+    '''
+    classdocs
+    '''
 
-	def __init__(self, strip):
-		'''
-		Constructor
-		'''
-		threading.Thread.__init__(self)
-		
-		self._loop = True
-		self._strip = strip
-		self._showStrip = False
+    def __init__(self, strip):
+        '''
+        Constructor
+        '''
+        threading.Thread.__init__(self)
+        
+        self._loop = True
+        self._strip = strip
+        self._showStrip = False
 
-		self._ledColor = [[]] * self._strip.numPixels()
+        self._ledColor = [[]] * self._strip.numPixels()
 
-		self.tasks = Queue.Queue()
+        self.tasks = Queue.Queue()
 
-	@property
-	def loop(self):
-		return self._loop
-	
-	@loop.setter
-	def loop(self, value):
-		self._loop = value
+    @property
+    def loop(self):
+        return self._loop
+    
+    @loop.setter
+    def loop(self, value):
+        self._loop = value
 
-	def addTask(self, task):
-		self.tasks.put_nowait(task)
+    def addTask(self, task):
+        self.tasks.put_nowait(task)
 
-	def _clampToColor(self, r, g, b):
+    def _clampToColor(self, r, g, b):
 
-		return Color(
-			max(0, min(255, r)),
-			max(0, min(255, g)),
-			max(0, min(255, b))
-			)
+        return Color(
+            max(0, min(255, r)),
+            max(0, min(255, g)),
+            max(0, min(255, b))
+            )
 
-	def _fadeColor(self, colorBegin, colorEnd, steps):
-		if colorBegin == colorEnd:
-			return []
+    def _fadeColor(self, colorBegin, colorEnd, steps):
+        if colorBegin == colorEnd:
+            return []
 
-		rgbBegin = np.array([(colorBegin >> 16) & 0xFF,
-			(colorBegin >> 8) & 0xFF,
-			colorBegin & 0xFF])
+        rgbBegin = np.array([(colorBegin >> 16) & 0xFF,
+            (colorBegin >> 8) & 0xFF,
+            colorBegin & 0xFF])
 
-		rgbEnd = np.array([(colorEnd >> 16) & 0xFF,
-			(colorEnd >> 8) & 0xFF,
-			colorEnd & 0xFF])
+        rgbEnd = np.array([(colorEnd >> 16) & 0xFF,
+            (colorEnd >> 8) & 0xFF,
+            colorEnd & 0xFF])
 
-		rgbDir = (rgbEnd - rgbBegin) / steps
+        rgbDir = (rgbEnd - rgbBegin) / steps
 
-		colorSteps = [0] * steps
-		for i in range(steps):
-			step = rgbBegin + (rgbDir * i)
-			colorSteps[i] = self._clampToColor(*step)
+        colorSteps = [0] * steps
+        for i in range(steps):
+            step = rgbBegin + (rgbDir * i)
+            colorSteps[i] = self._clampToColor(*step)
 
-		''' return in reverse order '''
-		colorSteps.reverse()
-		return colorSteps
+        ''' return in reverse order '''
+        colorSteps.reverse()
+        return colorSteps
 
-	def _pulseColor(self, color, steps):
-		rgbBegin = np.array([(color >> 16) & 0xFF,
-			(color >> 8) & 0xFF,
-			color & 0xFF])
+    def _pulseColor(self, color, steps):
+        rgbBegin = np.array([(color >> 16) & 0xFF,
+            (color >> 8) & 0xFF,
+            color & 0xFF])
 
-		rgbDir = rgbBegin / steps
+        rgbDir = rgbBegin / steps
 
-		colorSteps = [0] * (steps * 2)
-		for i in range(steps):
-			step = rgbBegin - (rgbDir * i)
-			colorSteps[i] = colorSteps[i] = self._clampToColor(*step)
+        colorSteps = [0] * (steps * 2)
+        for i in range(steps):
+            step = rgbBegin - (rgbDir * i)
+            colorSteps[i] = colorSteps[i] = self._clampToColor(*step)
 
-			colorSteps[((steps * 2) - i) - 1] = colorSteps[i]
+            colorSteps[((steps * 2) - i) - 1] = colorSteps[i]
 
-		return colorSteps
+        return colorSteps
 
 
-	def fade(self, led, color, steps):
-		self._ledColor[led] = self._fadeColor(self._strip.getPixelColor(led), color, steps)
+    def fade(self, led, color, steps):
+        self._ledColor[led] = self._fadeColor(self._strip.getPixelColor(led), color, steps)
 
-	def pulse(self, led, steps):
-		self._ledColor[led] = self._pulseColor(self._strip.getPixelColor(led), steps)
+    def pulse(self, led, steps):
+        self._ledColor[led] = self._pulseColor(self._strip.getPixelColor(led), steps)
 
-	def _updateLed(self):
-		for i in range(self._strip.numPixels()):
-			led = self._ledColor[i]
-			if len(led) > 0:
-				self._strip.setPixelColor(i , led.pop())
-				self._showStrip = True
-			
+    def _updateLed(self):
+        for i in range(self._strip.numPixels()):
+            led = self._ledColor[i]
+            if len(led) > 0:
+                self._strip.setPixelColor(i , led.pop())
+                self._showStrip = True
+            
 
-	def _process(self, task):
-		if task['target'] == 'strip':
-			exec('self._strip.' + task['function'])
-			self._showStrip = True
+    def _process(self, task):
+        if task['target'] == 'strip':
+            exec('self._strip.' + task['function'])
+            self._showStrip = True
 
-		if task['target'] == 'self':
-			func = getattr(self, task['function'])
-			func(*task['arguments'])
+        if task['target'] == 'self':
+            func = getattr(self, task['function'])
+            func(*task['arguments'])
 
-	def run(self):
-		self._strip.begin()
-		self.loop = True
-		while self.loop:
-			
-			try:
-				while self.loop:
-					task = self.tasks.get_nowait()
-					self._process(task)
+    def run(self):
+        self._strip.begin()
+        self.loop = True
+        while self.loop:
+            
+            try:
+                while self.loop:
+                    task = self.tasks.get_nowait()
+                    self._process(task)
 
-			except Queue.Empty:
-				pass					
-			self._updateLed()
+            except Queue.Empty:
+                pass                    
+            self._updateLed()
 
-			if self._showStrip:
-				self._strip.show()
-				self._showStrip = False
+            if self._showStrip:
+                self._strip.show()
+                self._showStrip = False
 
-			time.sleep(1/100.0)	
-				
+            time.sleep(1/100.0) 
+                
 
 class LedModule(tmb_module.TMB_Module):
-	
-	def __init__(self, config):
-		'''
-		Constructor
-		'''
-		tmb_module.TMB_Module.__init__(self, config)
-		
-		self._count = config.getint('led', 'count')
-		self._pin = config.getint('led', 'pin')
-		self._frequenz = config.getint('led', 'frequenz')
-		self._dma = config.getint('led', 'dma')
-		self._invert = config.getboolean('led', 'invert')
-		self._strip = None
-		
-		self._ledmapping = {}
-		for i in range(self._count):
-			section = 'led_{0}'.format(i)
-			name = config.get(section, 'name')
-			self._ledmapping[name] = i
+    
+    def __init__(self, config):
+        '''
+        Constructor
+        '''
+        tmb_module.TMB_Module.__init__(self, config)
+        
+        self._count = config.getint('led', 'count')
+        self._pin = config.getint('led', 'pin')
+        self._frequenz = config.getint('led', 'frequenz')
+        self._dma = config.getint('led', 'dma')
+        self._invert = config.getboolean('led', 'invert')
+        self._strip = None
+        
+        self._ledmapping = {}
+        for i in range(self._count):
+            section = 'led_{0}'.format(i)
+            name = config.get(section, 'name')
+            self._ledmapping[name] = i
 
-		print(self._ledmapping)
+        print(self._ledmapping)
 
-		self._led = 0
-		self._color = 0
+        self._led = 0
+        self._color = 0
 
-	def start(self):
-		tmb_module.TMB_Module.start(self)
-		
-		if not use_ledmodule:
-			return
+    def start(self):
+        tmb_module.TMB_Module.start(self)
+        
+        if not use_ledmodule:
+            return
 
-		self._strip = Adafruit_NeoPixel(self._count, self._pin, self._frequenz, self._dma, self._invert)
-		self._thread = LedThread(self._strip)
+        self._strip = Adafruit_NeoPixel(self._count, self._pin, self._frequenz, self._dma, self._invert)
+        self._thread = LedThread(self._strip)
 
-		''' initialize led '''
-		for key in self._ledmapping.keys():
-			self.setLedColor(key, 0x0000FF)
-		
-		
-		self._thread.start()
-		
-	def stop(self):
-		if use_ledmodule:
-			self._thread.loop = False
-			self._thread.join()
-		
-		tmb_module.TMB_Module.stop(self)
+        ''' initialize led '''
+        for key in self._ledmapping.keys():
+            self.setLedColor(key, 0x0000FF)
+        
+        
+        self._thread.start()
+        
+    def stop(self):
+        if use_ledmodule:
+            self._thread.loop = False
+            self._thread.join()
+        
+        tmb_module.TMB_Module.stop(self)
 
-	def update(self):
-		tmb_module.TMB_Module.update(self)
+    def update(self):
+        tmb_module.TMB_Module.update(self)
 
-	def setBrightness(self, brightness):
-		if use_ledmodule:
-			self._thread.addTask(dict(target = 'strip', function = 'setBrightness({})'.format(brightness)))
+    def setBrightness(self, brightness):
+        if use_ledmodule:
+            self._thread.addTask(dict(target = 'strip', function = 'setBrightness({})'.format(brightness)))
 
-	def setLedColor(self, led, colorvalue):
-		color = Color((colorvalue >> 8) & 0xFF, (colorvalue >> 16) & 0xFF, colorvalue & 0xFF)
-		if led in self._ledmapping:
-			mappedLed = self._ledmapping[led]
-			if use_ledmodule:
-				self._thread.addTask(dict(target = 'strip', function = 'setPixelColor({}, {})'.format(mappedLed, color)))
+    def setLedColor(self, led, colorvalue):
+        color = Color((colorvalue >> 8) & 0xFF, (colorvalue >> 16) & 0xFF, colorvalue & 0xFF)
+        if led in self._ledmapping:
+            mappedLed = self._ledmapping[led]
+            if use_ledmodule:
+                self._thread.addTask(dict(target = 'strip', function = 'setPixelColor({}, {})'.format(mappedLed, color)))
 
-	def setFadeLedColor(self, led, colorvalue, steps = 15):
-		
-		color = Color((colorvalue >> 8) & 0xFF, (colorvalue >> 16) & 0xFF, colorvalue & 0xFF)
-		if led in self._ledmapping:
-			mappedLed = self._ledmapping[led]
-			if use_ledmodule:
-				self._thread.addTask(dict(
-										target = 'self', 
-										function = 'fade',
-										arguments = [mappedLed, color, steps]
-										)
-									)
+    def setFadeLedColor(self, led, colorvalue, steps = 15):
+        
+        color = Color((colorvalue >> 8) & 0xFF, (colorvalue >> 16) & 0xFF, colorvalue & 0xFF)
+        if led in self._ledmapping:
+            mappedLed = self._ledmapping[led]
+            if use_ledmodule:
+                self._thread.addTask(dict(
+                                        target = 'self', 
+                                        function = 'fade',
+                                        arguments = [mappedLed, color, steps]
+                                        )
+                                    )
 
-	def pulse(self, led, steps = 15):
-		if use_ledmodule:
-			self._thread.addTask(dict(
-				target = 'self', 
-				function = 'pulse',
-				arguments = [led, steps]
-				)
-			)
+    def pulse(self, led, steps = 15):
+        if use_ledmodule:
+            self._thread.addTask(dict(
+                target = 'self', 
+                function = 'pulse',
+                arguments = [led, steps]
+                )
+            )
 
-	def show(self):
-		if use_ledmodule:
-			self._thread.addTask(dict(target = 'strip', function = 'show()'))
-
-		
-		 
+    def show(self):
+        if use_ledmodule:
+            self._thread.addTask(dict(target = 'strip', function = 'show()'))
