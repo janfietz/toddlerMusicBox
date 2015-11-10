@@ -13,7 +13,7 @@ import tmb_module, tmb_main
 import logging
 import collections
 import alsaaudio
-        
+
 class MPCThread(threading.Thread):
     '''
     classdocs
@@ -24,11 +24,11 @@ class MPCThread(threading.Thread):
         Constructor
         '''
         threading.Thread.__init__(self)
-        
+
         self._host = host
         self._port = port
         self._mpc = mpd.MPDClient()
-        
+
         self._doConnect = True
         self._loop = True
         self._syncMPD = False
@@ -43,14 +43,14 @@ class MPCThread(threading.Thread):
     @property
     def loop(self):
         return self._loop
-    
+
     @loop.setter
     def loop(self, value):
         self._loop = value
 
     def addTask(self, task):
         self.tasks.append(task)
-       
+
     def _connect(self):
         try:
             self._mpc.connect(self._host, self._port)
@@ -65,7 +65,7 @@ class MPCThread(threading.Thread):
         except:
             logging.debug('Unexpected error: %s', sys.exc_info()[0])
             self._doConnect = True
-        
+
     def _enter_idle(self):
         '''Enter idle state. Must be called outside idle state.
 
@@ -87,7 +87,7 @@ class MPCThread(threading.Thread):
     def _try_enter_idle(self):
         if not self._idle:
             self._enter_idle()
-    
+
     def _try_leave_idle(self):
         if self._idle:
             return self._leave_idle()
@@ -99,7 +99,7 @@ class MPCThread(threading.Thread):
 
     def _updatePlaylist(self):
         self.playlist = self._mpc.playlist()
-    
+
     def _process(self, fd):
         '''Process init/timeout/mpd events. Called in main loop.'''
 
@@ -133,17 +133,17 @@ class MPCThread(threading.Thread):
 
         self._syncMPD = False
         self._try_enter_idle()
-        
+
         if notify:
             tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'player', args = dict(status = self.status, current = self.currentsong)))
         if refreshplaylist:
             tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'playlist', args = dict(playlist = self.playlist)))
 
     def run(self):
-        
+
         self.loop = True
         while self.loop:
-            
+
             if self._doConnect:
                 self._connect()
                 time.sleep(1)
@@ -162,16 +162,16 @@ class MPCThread(threading.Thread):
                 except mpd.ConnectionError:
                     logging.info('MPC: disconnected')
                     self._mpc.disconnect()
-                    self._doConnect = True 
-           
+                    self._doConnect = True
+
 class MPCModule(tmb_module.TMB_Module):
-    
+
     def __init__(self, config):
         '''
         Constructor
         '''
         tmb_module.TMB_Module.__init__(self, config)
-        
+
         self.host = config.get('mpc', 'mpd_host')
         self.port = config.getint('mpc', 'mpd_port')
 
@@ -181,11 +181,11 @@ class MPCModule(tmb_module.TMB_Module):
 
     def start(self):
         tmb_module.TMB_Module.start(self)
-        
+
         self.thread = MPCThread(self.host, self.port)
-        
+
         self.thread.start()
-        
+
     def stop(self):
         self.thread.loop = False
         self.thread.join()
@@ -224,9 +224,16 @@ class MPCModule(tmb_module.TMB_Module):
         self.thread.addTask('clear()')
 
     def volume(self, relativeVolume):
-        mixer = alsaaudio.Mixer(self.mixerControl, self.mixerId, self.mixerCardIdx)
-        vol = mixer.getvolume()
-        logging.debug('Current alsa volume: {}'.format(vol))
-        vol[0] += relativeVolume
-        vol[0] = max(0, min(vol[0], 100))
-        mixer.setvolume(vol[0])
+        try:
+            mixer = alsaaudio.Mixer(self.mixerControl, self.mixerId, self.mixerCardIdx)
+            vol = mixer.getvolume()
+            logging.debug('Current alsa volume: {}'.format(vol))
+            vol[0] += relativeVolume
+            vol[0] = max(0, min(vol[0], 100))
+            mixer.setvolume(vol[0])
+        except alsaaudio.ALSAAudioError:
+            logging.error('No mixer found for Control: {} ID:{} Card: {}'.format(self.mixerControl, self.mixerId, self.mixerCardIdx))
+            cards = alsaaudio.cards()
+            logging.debug('Available cards: {}'.format(cards))
+            mixers = alsaaudio.mixers(self.mixerCardIdx)
+            logging.debug('Available mixer card {}: {}'.format(self.mixerCardIdx, mixers))    
