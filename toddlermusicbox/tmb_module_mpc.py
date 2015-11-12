@@ -234,9 +234,11 @@ class MPCModule(tmb_module.TMB_Module):
             vol[0] += relativeVolume
             vol[0] = max(0, min(vol[0], 100))
             mixer.setvolume(vol[0])
+            return vol[0]
         except alsaaudio.ALSAAudioError:
             logging.error('No mixer found for Control: {} ID:{} Card: {}'.format(self.mixerControl, self.mixerId, self.mixerCardIdx))
             cards = alsaaudio.cards()
             logging.debug('Available cards: {}'.format(cards))
             mixers = alsaaudio.mixers(self.mixerCardIdx)
             logging.debug('Available mixer card {}: {}'.format(self.mixerCardIdx, mixers))
+        return 0
