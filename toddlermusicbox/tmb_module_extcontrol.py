@@ -49,7 +49,24 @@ class EXTThread(threading.Thread):
 
     def noEffect(self):
         logging.debug('EXT: disable effect')
+        if self._getPrompt():
+            self._serialDevice.write('noeffect\n\r')
+            data = self._serialDevice.read(8)
+            self._getPrompt()
 
+    def hideControls(self):
+        logging.debug('EXT: hide controls')
+        if self._getPrompt():
+            self._serialDevice.write('hidecontrols\n\r')
+            data = self._serialDevice.read(13)
+            self._getPrompt()
+
+    def showControls(self):
+        logging.debug('EXT: show controls')
+        if self._getPrompt():
+            self._serialDevice.write('showcontrols\n\r')
+            data = self._serialDevice.read(13)
+            self._getPrompt()
 
     def setPlayMode(self, mode):
         logging.debug('EXT: set play mode %d', mode)
@@ -60,6 +77,10 @@ class EXTThread(threading.Thread):
 
     def setVolume(self, volume):
         logging.debug('EXT: set volume %d', volume)
+        if self._getPrompt():
+            self._serialDevice.write('volume {}\n\r'.format(volume))
+            data = self._serialDevice.read(10)
+            self._getPrompt()
 
     def _process(self, task):
         if task['target'] == 'self':
@@ -71,13 +92,15 @@ class EXTThread(threading.Thread):
 
     def _getPrompt(self):
         if self._serialDevice:
-            self._serialDevice.write('\r\n')
+            while True:
+                self._serialDevice.write('\r\n')
 
-            data = self._serialDevice.read(10)
-            if "ch>" in data:
-                return True
-            logging.debug('EXT: promp answer %s', data)
+                data = self._serialDevice.read(10)
+                if "ch>" in data:
+                    return True
+                    logging.debug('EXT: promp answer %s', data)
         return False
+
     def _updateId(self):
 
         uid = self._uid
@@ -96,11 +119,9 @@ class EXTThread(threading.Thread):
             uid = ''
 
         if uid != self._uid:
-            logging.debug('NFC: uid %s', uid)
+            logging.error('NFC: uid %s', uid)
             self._uid = uid
             self._sendEvent()
-
-
 
     def run(self):
 
@@ -111,21 +132,29 @@ class EXTThread(threading.Thread):
             try:
                 if openPort == False:
                     self._serialDevice = serial.Serial(self._device, 38400, timeout = 0.1)
-                    logging.debug('EXT: opened device: %s', self._device)
+                    logging.info('EXT: opened device: %s', self._device)
                     openPort = True
-            except serial.SerialException:
+
+                    self.showControls()
+            except:
                 self._serialDevice = None
 
             try:
-                while self.loop:
-                    task = self.tasks.get_nowait()
-                    self._process(task)
+                try:
+                    while self.loop:
+                        task = self.tasks.get_nowait()
+                        self._process(task)
+                except Queue.Empty:
+                    pass
 
-            except Queue.Empty:
-                pass
-            self._updateId()
+                self._updateId()
+            except serial.SerialException:
+                self._serialDevice.close()
+                logging.info('EXT: closed device: %s', self._device)
+                self._serialDevice = None
+                openPort = False
 
-            time.sleep(1/10.0)
+            time.sleep(1/15.0)
 
 class EXTModule(tmb_module.TMB_Module):
 
@@ -173,6 +202,19 @@ class EXTModule(tmb_module.TMB_Module):
                                 function = 'nextEffect',
                                 arguments = []
                                 ))
+    def hideControls(self):
+        self._thread.addTask(dict(
+                            target = 'self',
+                            function = 'hideControls',
+                            arguments = []
+                            ))
+
+    def showControls(self):
+        self._thread.addTask(dict(
+                            target = 'self',
+                            function = 'showControls',
+                            arguments = []
+                            ))
 
     def setPlayMode(self, mode):
         self._thread.addTask(dict(
