@@ -319,10 +319,16 @@ class ToddlerMusicBox():
             lsResult = self.mpc.ls()
             if lsResult:
                 for entry in lsResult:
+                    logging.debug('mpcls entry: %s', entry)
                     if 'directory' in entry.keys():
-                        if entry['directory'] == args['uid']:
+                        if entry['directory'].lower() == args['uid'].lower():
                             self.mpc.clear()
                             self.mpc.add(entry['directory'])
+                            self.mpc.play()
+                    elif 'playlist' in entry.keys():
+                        if entry['playlist'].lower() == args['uid'].lower():
+                            self.mpc.clear()
+                            self.mpc.load(entry['playlist'])
                             self.mpc.play()
         else:
             self.mpc.clear()
