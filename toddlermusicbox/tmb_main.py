@@ -298,16 +298,20 @@ class ToddlerMusicBox():
 
         if args['action'] == 'previous':
             if args['state'] == 'unpressed':
-
                 self.mpc.previous()
 
         if args['action'] == 'vol_up':
             if args['state'] == 'pressed':
-                self.mpc.volume(5)
+                newVol = self.mpc.volume(5)
+                if self.extcontrol:
+                    self.extcontrol.setVolume(newVol)
+
 
         if args['action'] == 'vol_down':
             if args['state'] == 'pressed':
-                self.mpc.volume(-10)
+                newVol = self.mpc.volume(-10)
+                if self.extcontrol:
+                    self.extcontrol.setVolume(newVol)
 
         if args['action'] == 'special':
             if args['state'] == 'unpressed':
