@@ -220,6 +220,9 @@ class MPCModule(tmb_module.TMB_Module):
     def add(self, album):
         self.thread.addTask('add(\'{}\')'.format(album))
 
+    def load(self, playlist):
+        self.thread.addTask('load(\'{}\')'.format(playlist))
+
     def clear(self):
         self.thread.addTask('clear()')
 
@@ -236,4 +239,4 @@ class MPCModule(tmb_module.TMB_Module):
             cards = alsaaudio.cards()
             logging.debug('Available cards: {}'.format(cards))
             mixers = alsaaudio.mixers(self.mixerCardIdx)
-            logging.debug('Available mixer card {}: {}'.format(self.mixerCardIdx, mixers))    
+            logging.debug('Available mixer card {}: {}'.format(self.mixerCardIdx, mixers))
