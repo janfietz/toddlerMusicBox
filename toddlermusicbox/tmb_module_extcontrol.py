@@ -45,6 +45,7 @@ class EXTThread(threading.Thread):
         if self._getPrompt():
             self._serialDevice.write('nexteffect\n\r')
             data = self._serialDevice.read(9)
+            self._getPrompt()
 
     def noEffect(self):
         logging.debug('EXT: disable effect')
@@ -55,6 +56,7 @@ class EXTThread(threading.Thread):
         if self._getPrompt():
             self._serialDevice.write('playmode {}\n\r'.format(mode))
             data = self._serialDevice.read(10)
+            self._getPrompt()
 
     def setVolume(self, volume):
         logging.debug('EXT: set volume %d', volume)
@@ -82,8 +84,13 @@ class EXTThread(threading.Thread):
 
         if self._getPrompt():
             self._serialDevice.write('uid\n\r')
-            data = self._serialDevice.read(22)
-            #logging.debug('EXT: uid answer %s', data)
+            data = self._serialDevice.read(3)
+            data = self._serialDevice.read(30)
+            lines = data.splitlines()
+            for line in lines:
+                idx = line.find('[')
+                if idx >= 0:
+                    uid = line[:idx]
 
         if uid == None:
             uid = ''
