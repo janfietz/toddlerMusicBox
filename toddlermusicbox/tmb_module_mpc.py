@@ -112,6 +112,10 @@ class MPCThread(threading.Thread):
                 notify = True
                 if 'playlist' in events:
                     refreshplaylist = True
+                if 'update' in events:
+                    tmb_main.ToddlerMusicBox.eventQueue.append(dict(sender = self, type = 'dnupdate', args = dict()))
+
+
 
             if self.tasks:
                 notify = True
