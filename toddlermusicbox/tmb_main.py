@@ -182,6 +182,7 @@ class ToddlerMusicBox():
 
         self.led = None
         self.extcontrol = None
+        self.nfcUid = ''
 
     def __enter__(self):
 
@@ -318,25 +319,31 @@ class ToddlerMusicBox():
                 if self.extcontrol:
                     self.extcontrol.nextEffect()
 
-    def _on_nfc(self, args):
-        if len(args['uid']) > 0:
+    def _playUID(self, uid):
+        if len(uid) > 0:
             lsResult = self.mpc.ls()
             if lsResult:
                 for entry in lsResult:
                     logging.debug('mpcls entry: %s', entry)
                     if 'directory' in entry.keys():
-                        if entry['directory'].lower() == args['uid'].lower():
+                        if entry['directory'].lower() == uid.lower():
                             self.mpc.clear()
                             self.mpc.add(entry['directory'])
                             self.mpc.play()
                     elif 'playlist' in entry.keys():
-                        if entry['playlist'].lower() == args['uid'].lower():
+                        if entry['playlist'].lower() == uid.lower():
                             self.mpc.clear()
                             self.mpc.load(entry['playlist'])
                             self.mpc.play()
         else:
             self.mpc.clear()
 
+    def _on_nfc(self, args):
+        self.nfcUid = args['uid']
+        self._playUID(self.nfcUid)
+
+    def _on_dbupdate(self, args):
+        self._playUID(self.nfcUid)
 
     def _processEvent(self, event):
         try:
