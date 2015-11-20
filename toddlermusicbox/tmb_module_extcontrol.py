@@ -23,6 +23,7 @@ class EXTThread(threading.Thread):
 
         self._loop = True
         self._uid = None
+        self._resetCnt = 0
 
         self._device = device
         self._serialDevice = None
@@ -117,11 +118,19 @@ class EXTThread(threading.Thread):
 
         if uid == None:
             uid = ''
+        else:
+            self._resetCnt = 5
 
-        if uid != self._uid:
+        if uid == '':
+            self._resetCnt += 1
+
+        if (uid != self._uid) and (self._resetCnt == 5):
             logging.error('NFC: uid %s', uid)
             self._uid = uid
             self._sendEvent()
+
+        if self._resetCnt == 5:
+            self._resetCnt = 0
 
     def run(self):
 
