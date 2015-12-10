@@ -2,12 +2,12 @@
 from setuptools import setup
 
 setup(name = 'toddlerMusicBox',
-	version = '1.0.0',
+	version = '1.0.1',
 	author = 'Jan Fietz',
 	author_email = 'janfietz@gmail.com',
 	description = 'Raspberry Pi based music box.',
 	packages=['toddlermusicbox'],
 	url = 'https://github.com/janfietz/toddlerMusicBox.git',
-	requires = ['neopixel', 'numpy', 'mpd', 'alsaaudio', 'nxppy', 'json', 'RPi.GPIO'],
+	requires = ['neopixel', 'numpy', 'mpd', 'alsaaudio', 'nxppy', 'json', 'RPi.GPIO', 'serial'],
 	scripts=['bin/toddlermusicbox']
 )

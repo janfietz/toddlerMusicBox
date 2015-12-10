@@ -33,6 +33,7 @@ from tmb_module_mpc import MPCModule
 from tmb_module_led import LedModule
 from tmb_module_input import InputModule
 from tmb_module_nfc import NFCModule
+from tmb_module_extcontrol import EXTModule
 
 
 # ------------------------------
@@ -85,6 +86,9 @@ channel=29
 action=vol_up
 [nfc]
 enable=true
+[ext]
+enable=true
+device=/dev/ttyACM0
 [colortheme_default]
 colors={
     "play": "0x51BD1F",
@@ -116,7 +120,7 @@ colors={
     "vol_down_30": "0x46084E",
     "vol_down_20": "0x46084E",
     "vol_down_10": "0x46084E",
-    "vol_down_00": "0x46084E" 
+    "vol_down_00": "0x46084E"
     }
 """
 
@@ -129,13 +133,13 @@ def read_conf():
     conf.readfp(io.BytesIO(defaults))
     '''Read global configurations from file.'''
     conf.read(conf_files)
-    
+
 
 class ToddlerMusicBox():
     '''Main class'''
 
     eventQueue = collections.deque()
-    
+
     defaultcolors = {
                 'play': 0x0000FF,
                 'pause': 0x0000FF,
@@ -176,6 +180,10 @@ class ToddlerMusicBox():
         self._mpdstatus = {}
         self._playList = []
 
+        self.led = None
+        self.extcontrol = None
+        self.nfcUid = ''
+
     def __enter__(self):
 
         '''Create Modules'''
@@ -201,18 +209,22 @@ class ToddlerMusicBox():
         if conf.getboolean('nfc', 'enable'):
             self.nfc = NFCModule(conf)
             self.modules.append(self.nfc)
-        
+
+        if conf.getboolean('ext', 'enable'):
+            self.extcontrol = EXTModule(conf)
+            self.modules.append(self.extcontrol)
+
         return self
 
     def __exit__(self, type, value, traceback):
         self.loop = False
-        
+
     def _queryColor(self, colorname):
         if colorname in self._colorTheme.keys():
             return int(self._colorTheme[colorname], 16)
         return 0x0000FF
 
-    def _updateState(self):
+    def _updateStateLED(self):
         if 'state' in self._mpdstatus.keys():
             if self._mpdstatus['state'] == 'play':
                 self.led.setFadeLedColor('play', self._queryColor('play'))
@@ -236,9 +248,26 @@ class ToddlerMusicBox():
                     self.led.setFadeLedColor('next', self._queryColor('next'))
                 else:
                     self.led.setFadeLedColor('next', self._queryColor('next_inactive'))
-        
+
         self.led.setFadeLedColor('previous', self._queryColor('previous'))
 
+    def _updateStateEXT(self):
+        if 'state' in self._mpdstatus.keys():
+            if self._mpdstatus['state'] == 'play':
+                self.extcontrol.setPlayMode(EXTModule.PLAY)
+            if self._mpdstatus['state'] == 'stop':
+                if len(self._playList) == 0:
+                    self.extcontrol.setPlayMode(EXTModule.NOSELECTED)
+                else:
+                    self.extcontrol.setPlayMode(EXTModule.STOP)
+            if self._mpdstatus['state'] == 'pause':
+                self.extcontrol.setPlayMode(EXTModule.PAUSE)
+
+    def _updateState(self):
+        if self.led:
+            self._updateStateLED()
+        if self.extcontrol:
+            self._updateStateEXT()
 
     def _on_player(self, args):
         logging.info('Status: %s', args['status']['state'])
@@ -248,7 +277,7 @@ class ToddlerMusicBox():
             playerStateChanged = True
         self._mpdstatus = args['status']
         if len(args['current']):
-            logging.info('Current Song: %s - %s', args['current']['artist'] , args['current']['title'])
+            logging.info('Current Song: %s', args['current'])
 
         if playerStateChanged:
             self._updateState()
@@ -257,50 +286,71 @@ class ToddlerMusicBox():
         logging.info('Playlist: %i', len(args['playlist']))
         self._playList = args['playlist']
         self._updateState()
-    
+
     def _on_input(self, args):
         logging.info('action: %s %s', args['action'], args['state'])
         if args['action'] == 'play':
             if args['state'] == 'unpressed':
                 self.mpc.toggle()
-                
+
         if args['action'] == 'next':
             if args['state'] == 'unpressed':
                 self.mpc.next()
 
         if args['action'] == 'previous':
             if args['state'] == 'unpressed':
-
                 self.mpc.previous()
 
         if args['action'] == 'vol_up':
             if args['state'] == 'pressed':
-                self.mpc.volume(5)
-                
+                newVol = self.mpc.volume(5)
+                if self.extcontrol:
+                    self.extcontrol.setVolume(newVol)
+
+
         if args['action'] == 'vol_down':
             if args['state'] == 'pressed':
-                self.mpc.volume(-10)
+                newVol = self.mpc.volume(-10)
+                if self.extcontrol:
+                    self.extcontrol.setVolume(newVol)
 
-    def _on_nfc(self, args):
-        if len(args['uid']) > 0:
+        if args['action'] == 'special':
+            if args['state'] == 'unpressed':
+                if self.extcontrol:
+                    self.extcontrol.nextEffect()
+
+    def _playUID(self, uid):
+        if len(uid) > 0:
             lsResult = self.mpc.ls()
             if lsResult:
                 for entry in lsResult:
+                    logging.debug('mpcls entry: %s', entry)
                     if 'directory' in entry.keys():
-                        if entry['directory'] == args['uid']:
+                        if entry['directory'].lower() == uid.lower():
                             self.mpc.clear()
                             self.mpc.add(entry['directory'])
                             self.mpc.play()
+                    elif 'playlist' in entry.keys():
+                        if entry['playlist'].lower() == uid.lower():
+                            self.mpc.clear()
+                            self.mpc.load(entry['playlist'])
+                            self.mpc.play()
         else:
             self.mpc.clear()
-                            
+
+    def _on_nfc(self, args):
+        self.nfcUid = args['uid']
+        self._playUID(self.nfcUid)
+
+    def _on_dbupdate(self, args):
+        self._playUID(self.nfcUid)
 
     def _processEvent(self, event):
         try:
             getattr(self, "_on_%s" % event['type'])(event['args'])
         except AttributeError as e:
             logging.error(e)
-    
+
     def main_loop(self):
 
         self.loop = True
@@ -309,7 +359,7 @@ class ToddlerMusicBox():
         for module in self.modules:
             logging.debug('Start %s', type(module).__name__)
             module.start()
-        
+
         try:
             while self.loop:
                 try:
@@ -321,7 +371,7 @@ class ToddlerMusicBox():
 
                 for module in self.modules:
                     module.update()
-            
+
                 time.sleep(0.1)
         except KeyboardInterrupt:
             self.loop = False
@@ -333,7 +383,7 @@ class ToddlerMusicBox():
 
     def main(self, argv):
         loglevel = 'WARNING'
-        
+
         parser = argparse.ArgumentParser(description='toddlerMusicBox options')
         parser.add_argument('--loglevel', default='WARNING', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
                         help='Set process verbosity')
