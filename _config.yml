@@ -10,7 +10,6 @@ title:            toddlerMusicBox
 tagline:          'A toddler friendly music box'
 description:      ''
 url:              http://janfietz.github.io/toddlerMusicBox/
-baseurl:          /toddlerMusicBox
 
 author:
   name:           'Jan Fietz'
@@ -28,10 +27,10 @@ github:
 collections:
   tmb_one:
     output: true
-    permalink: /tmb_one/:path/
+    permalink: tmb_one/:path/
   tmb_two:
     output: true
-    permalink: /tmb_two/:path/
+    permalink: tmb_two/:path/
 
 defaults:
  - scope:
