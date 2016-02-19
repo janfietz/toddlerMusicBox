@@ -10,7 +10,7 @@ title:            toddlerMusicBox
 tagline:          'A toddler friendly music box'
 description:      ''
 url:              http://janfietz.github.io/toddlerMusicBox/
-baseurl:          toddlerMusicBox/
+baseurl:          /toddlerMusicBox
 
 author:
   name:           'Jan Fietz'
