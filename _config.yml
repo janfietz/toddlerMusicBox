@@ -1,5 +1,4 @@
 # Dependencies
-markdown:         redcarpet
 highlighter:      pygments
 
 # Permalinks
@@ -10,11 +9,10 @@ title:            toddlerMusicBox
 tagline:          'A toddler friendly music box'
 description:      ''
 url:              http://janfietz.github.io/toddlerMusicBox/
-baseurl:          /toddlerMusicBox
 
 author:
   name:           'Jan Fietz'
-  url:            https://jan.jan-fietz.de
+  url:            https://github.com/janfietz
 
 paginate:         5
 gems:             [jekyll-paginate]
@@ -25,22 +23,10 @@ version:          1.1.0
 github:
   repo:           https://github.com/janfietz/toddlerMusicBox
 
-collections:
-  tmb_one:
-    output: true
-    permalink: /tmb_one/:path/
-  tmb_two:
-    output: true
-    permalink: /tmb_two/:path/
+
 
 defaults:
  - scope:
-     path: ""
-     type: tmb_one
+     path: "assets/images"
    values:
-     layout: page
- - scope:
-     path: ""
-     type: tmb_two
-   values:
-     layout: page
+     image: true

@@ -4,10 +4,10 @@ title: toddlerMusicBox One
 order: 10
 ---
 
-![](tmb_003.JPG)
-![](tmb_005.JPG)
-![](tmb_006.JPG)
-![](tmb_004.JPG)
+![]({{ site.url }}/assets/images/tmb_003.JPG)
+![]({{ site.url }}/assets/images/tmb_005.JPG)
+![]({{ site.url }}/assets/images/tmb_006.JPG)
+![]({{ site.url }}/assets/images/tmb_004.JPG)
 
 # Parts
 * my old computer speakers
@@ -21,8 +21,8 @@ order: 10
 * NFC Tags
 
 # Assembly
-![](tmb_001.JPG)
-![](tmb_002.JPG)
+![]({{ site.url }}/assets/images/tmb_001.JPG)
+![]({{ site.url }}/assets/images/tmb_002.JPG)
 
 There are a lot of guides in the internet of how to connect buttons, LEDs and the NFC board to the Pi. I recommend to search for further information.
 

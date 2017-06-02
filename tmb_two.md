@@ -4,11 +4,11 @@ title: toddlerMusicBox Two
 order: 20
 ---
 
-![](tmb_02_002.JPG)
-![](tmb_02_001.JPG)
-![](tmb_02_003.JPG)
-![](tmb_02_004.JPG)
-![](tmb_02_005.JPG)
+![]({{ site.url }}/assets/images/tmb_02_002.JPG)
+![]({{ site.url }}/assets/images/tmb_02_001.JPG)
+![]({{ site.url }}/assets/images/tmb_02_003.JPG)
+![]({{ site.url }}/assets/images/tmb_02_004.JPG)
+![]({{ site.url }}/assets/images/tmb_02_005.JPG)
 
 # Parts
 * Magnat Edition 102 - 2 Wege Koax Speaker 10 cm
@@ -28,9 +28,9 @@ order: 20
 * some USB and HDMI adapter and cables
 
 # Assembly
-![](tmb_02_006.jpg)
-![](tmb_02_007.jpg)
-![](tmb_02_008.jpg)
-![](tmb_02_009.jpg)
+![]({{ site.url }}/assets/images/tmb_02_006.jpg)
+![]({{ site.url }}/assets/images/tmb_02_007.jpg)
+![]({{ site.url }}/assets/images/tmb_02_008.jpg)
+![]({{ site.url }}/assets/images/tmb_02_009.jpg)
 
 This time I used a STM32F4DISCOVERY board to drive the led strip and button lights. It is connected to one of the USB ports to the Raspberry PI. The toodlerMusicBox software send some basic commands to adjust effects and request the RFID id. The RFID reader is connected to the DISCOVERY too. The [firmware project](https://github.com/janfietz/toddlerMusicBoxControl) is hosted on Github.
